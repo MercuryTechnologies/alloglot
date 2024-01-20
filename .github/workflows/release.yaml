@@ -1,0 +1,88 @@
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+name: Build and publish a release
+
+jobs:
+  is_merged_release:
+    name: Ensure PR was merged
+    if: >
+      github.event.pull_request.merged == true
+        && contains(github.event.pull_request.labels.*.name, 'release')
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "This is a canonical hack to run GitHub Actions on merged PRs"
+          echo "See: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#running-your-workflow-when-a-pull-request-merges"
+
+      - name: Comment on PR with link to this action
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            [Preparing][preparing] to publish a release.
+
+            [preparing]: ${{ github.server_url }}/${{ github.repository }}/actions/run/${{ github.run_id }}
+
+  build:
+    name: Build release artifact
+    needs: is_merged_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get NPM metadata
+        id: npm_metadata
+        run: |
+          sudo apt-get install jq
+          echo "name=$(jq '.name' package.json | tr -d '"')" >> "$GITHUB_OUTPUT"
+          echo "displayName=$(jq '.displayName' package.json | tr -d '"')" >> "$GITHUB_OUTPUT"
+          echo "description=$(jq '.description' package.json | tr -d '"')" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq '.version' package.json | tr -d '"')" >> "$GITHUB_OUTPUT"
+
+      - name: Build artifact
+        run: npm run build
+
+      - name: Tag commit
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_sha: ${{ github.event.pull_request.merge_commit_sha }}
+          custom_tag: ${{ steps.npm_metadata.outputs.version }}
+
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          tag_name: v${{ steps.npm_metadata.outputs.version }}
+          body: |
+            # ${{ steps.npm_metadata.outputs.displayName }} v${{ steps.npm_metadata.outputs.version }}
+
+            ${{ steps.npm_metadata.outputs.description }}
+
+            To install, download `${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix`, open a terminal to the download directory, and run
+
+            ```
+            code --install-extension ${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix
+            ```
+          files: |
+            ${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix
+
+      - name: Comment on PR with link to the release
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            [Release ${{ steps.npm_metadata.outputs.version }}][release] was built and published successfully!
+
+            [release]: ${{ steps.create_release.outputs.url }}

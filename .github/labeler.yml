@@ -1,0 +1,5 @@
+---
+# See: https://github.com/marketplace/actions/labeler
+patch:
+  - 'src/**/*.js'
+  - 'package.json'
