@@ -3,18 +3,18 @@
   "displayName": "Alloglot",
   "description": "Language agnostic IDE for VS Code",
   "version": "0.0.1",
+  "publisher": "danielbrice@gmail.com",
+  "categories": [
+    "Other"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
-  "publisher": "danielbrice@gmail.com",
   "license": "All rights reserved",
   "repository": {
     "type": "git",
     "url": "https://github.com/friedbrice/alloglot"
   },
-  "categories": [
-    "Other"
-  ],
   "activationEvents": [
     "*"
   ],
