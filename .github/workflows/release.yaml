@@ -86,3 +86,9 @@ jobs:
             [Release ${{ steps.npm_metadata.outputs.version }}][release] was built and published successfully!
 
             [release]: ${{ steps.create_release.outputs.url }}
+
+      - name: Publish to VS Code Marketplace
+        run: >
+          npx vsce publish
+            --pat "${{ secrets.MARKETPLACE_TOKEN }}"
+            --packagePath "${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix"

@@ -3,17 +3,17 @@
   "displayName": "Alloglot",
   "description": "Language agnostic IDE for VS Code",
   "version": "1.0.0",
-  "publisher": "danielbrice@gmail.com",
+  "publisher": "friedbrice",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/friedbrice/alloglot"
+  },
   "categories": [
     "Other"
   ],
   "engines": {
     "vscode": "^1.85.0"
-  },
-  "license": "All rights reserved",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/friedbrice/alloglot"
   },
   "activationEvents": [
     "*"
@@ -51,12 +51,12 @@
       "properties": {
         "alloglot.startCommand": {
           "type": "string",
-          "description": "TODO",
+          "description": "A command to run in a child process on startup. (TODO)",
           "default": ""
         },
         "alloglot.stopCommand": {
           "type": "string",
-          "description": "TODO",
+          "description": "A command to run on shutdown. `${pid}` will be interpolated with the process ID of the startup process. (TODO)",
           "default": ""
         },
         "alloglot.languages": {
@@ -67,17 +67,17 @@
             "properties": {
               "languageId": {
                 "type": "string",
-                "description": "TODO",
+                "description": "The unique language ID. You can usually find this in a language's syntax-highlighting extension.",
                 "default": ""
               },
               "formatCommand": {
                 "type": "string",
-                "description": "TODO",
+                "description": "A formatter command. Reads from STDIN and writes to STDOUT. `${file}` will be interpolated with the path to the file.",
                 "default": ""
               },
               "apiSearchUrl": {
                 "type": "string",
-                "description": "TODO",
+                "description": "URL to documentation/API search. `${query}` will be interpolated with the symbol under cursor.",
                 "default": ""
               },
               "annotationsFiles": {
@@ -85,7 +85,7 @@
                 "default": [],
                 "items": {
                   "type": "string",
-                  "description": "TODO",
+                  "description": "JSON files that will be polled for diagnostics. See README.md for the format.",
                   "default": ""
                 }
               }
@@ -110,6 +110,7 @@
     "@typescript-eslint/parser": "^6.15.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
     "eslint": "^8.56.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
