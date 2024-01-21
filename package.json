@@ -15,9 +15,7 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "activationEvents": [
-    "*"
-  ],
+  "activationEvents": ["*"],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
