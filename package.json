@@ -2,7 +2,7 @@
   "name": "alloglot",
   "displayName": "Alloglot",
   "description": "Language agnostic IDE for VS Code",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "friedbrice",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
@@ -15,7 +15,9 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "activationEvents": ["*"],
+  "activationEvents": [
+    "*"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
