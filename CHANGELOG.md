@@ -1,9 +1,13 @@
 # Current
 
+- Fix changelog
+
+# 1.0.1
+
 - Change license
 - Improve documentation
 
-# 1.0.8
+# 1.0.0
 
 - Poll user-specified files for diagnostics
 - API search via user-specified URL
