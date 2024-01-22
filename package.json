@@ -2,7 +2,7 @@
   "name": "alloglot",
   "displayName": "Alloglot",
   "description": "Language agnostic IDE for VS Code",
-  "version": "1.0.3",
+  "version": "1.0.1",
   "publisher": "friedbrice",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
@@ -61,6 +61,7 @@
         },
         "alloglot.languages": {
           "type": "array",
+          "description": "An array of language configurations. See README.md.",
           "default": [],
           "items": {
             "type": "object",

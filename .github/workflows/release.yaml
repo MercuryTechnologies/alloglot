@@ -87,8 +87,9 @@ jobs:
 
             [release]: ${{ steps.create_release.outputs.url }}
 
-      - name: Publish to VS Code Marketplace
-        run: >
-          npx vsce publish
-            --pat "${{ secrets.MARKETPLACE_TOKEN }}"
-            --packagePath "${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix"
+      - name: Publish to Visual Studio Marketplace
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          pat: ${{ secrets.MARKETPLACE_TOKEN }}
+          registryUrl: https://marketplace.visualstudio.com
+          extensionFile: ${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix

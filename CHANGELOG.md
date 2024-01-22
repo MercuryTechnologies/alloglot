@@ -1,5 +1,9 @@
 # Current
 
+- Improve documentation
+
+# 1.0.3
+
 - Fix changelog
 
 # 1.0.1

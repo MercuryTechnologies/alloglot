@@ -12,7 +12,52 @@ Language agnostic IDE for VS Code.
 
 ## Configuration
 
-See the _Settings_ section of the _Feature contributions_ tab.
+Alloglot uses the following configuration schema.
+
+```typescript
+type Config = {
+  /**
+   * A command to run in a child process on startup. (TODO)
+   */
+  startCommand: string
+
+  /**
+   * A command to run on shutdown.
+   * `${pid}` will be interpolated with the process ID of the startup process. (TODO)
+   */
+  stopCommand: string
+
+  /**
+   * An array of language configurations.
+   */
+  languages: Array<{
+    /**
+     * The unique language ID.
+     * You can usually find this in a language's syntax-highlighting extension.
+     */
+    languageId: string
+
+    /**
+     * A formatter command.
+     * Reads from STDIN and writes to STDOUT.
+     * `${file}` will be interpolated with the path to the file.
+     */
+    formatCommand: string
+
+    /**
+     * URL to documentation/API search.
+     * `${query}` will be interpolated with the symbol under cursor.
+     */
+    apiSearchUrl: string
+
+    /**
+     * JSON files that will be polled for diagnostics.
+     * See README.md for the format.
+     */
+    annotationsFiles: Array<string>
+  }>
+}
+```
 
 ## Diagnostics JSON format
 
