@@ -38,7 +38,7 @@ import * as vscode from 'vscode'
 import { Config, Elem, alloglot } from "./config";
 
 export function makeAnnotations(lang: Elem<Config['languages']>): vscode.Disposable {
-  const files = lang.annotationsFiles.map(x => x.trim()).filter(x => x.length !== 0)
+  const files = lang.annotationsFiles
   if (files.length === 0) return { dispose: () => { } }
 
   const diagnostics = vscode.languages.createDiagnosticCollection(alloglot.collections.annotations)

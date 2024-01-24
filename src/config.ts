@@ -1,10 +1,9 @@
 export type Elem<as extends Array<unknown>> = as extends Array<infer a> ? a : never
 
 export type Config = {
-  startCommand: string
-  stopCommand: string
   languages: Array<{
     languageId: string
+    serverCommand: string
     formatCommand: string
     apiSearchUrl: string
     annotationsFiles: Array<string>
@@ -26,8 +25,6 @@ export namespace alloglot {
   }
 
   export namespace config {
-    export const startCommand = 'startCommand' as const
-    export const stopCommand = 'stopCommand' as const
     export const languages = 'languages' as const
   }
 }
