@@ -7,8 +7,9 @@ Language agnostic IDE for VS Code.
 - [x] Reads code diagnostics info by polling a list of user-supplied JSON files.
 - [x] Allows the user to configure a custom command as their code formatter.
 - [x] Allows the user to configure a custom URL for documentation/API search.
-- [ ] Code navigation via a small subset of LSP. (TODO)
-- [ ] Run a user-configurable command on activation and manage the child-process. (TODO)
+- [x] Per-language LSP client.
+- ~~Run a user-configurable command on activation and manage the child-process. (TODO)~~ (redundant)
+- ~~Code navigation via a small subset of LSP. (TODO)~~ (redundant)
 
 ## Configuration
 
@@ -16,17 +17,6 @@ Alloglot uses the following configuration schema.
 
 ```typescript
 type Config = {
-  /**
-   * A command to run in a child process on startup. (TODO)
-   */
-  startCommand: string
-
-  /**
-   * A command to run on shutdown.
-   * `${pid}` will be interpolated with the process ID of the startup process. (TODO)
-   */
-  stopCommand: string
-
   /**
    * An array of language configurations.
    */
@@ -36,6 +26,11 @@ type Config = {
      * You can usually find this in a language's syntax-highlighting extension.
      */
     languageId: string
+
+    /**
+     * A command to start the language server.
+     */
+    serverCommand: string
 
     /**
      * A formatter command.
@@ -59,6 +54,22 @@ type Config = {
 }
 ```
 
+An example configuration follows.
+
+```json
+{
+  "alloglot.languages": [
+    {
+      "languageId": "haskell",
+      "serverCommand": "static-ls",
+      "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
+      "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
+      "annotationsFiles": "ghcid.txt"
+    }
+  ]
+}
+```
+
 ## Diagnostics JSON format
 
 Alloglot provides diagnostics information by polling a user-configurable list of JSON files.
@@ -73,7 +84,7 @@ Alloglot expects the JSON file be a list of _annotations,_ objects adhering to t
 type Annotation = {
   /**
    * Source of this annotation.
-   * E.g. the name of the compiler or a linter.
+   * E.g. the name of the compiler or linter that created it.
    */
   source: string
 
@@ -129,28 +140,32 @@ type Annotation = {
 }
 ```
 
-## Future work
+## ~~Future work~~
 
-### Code Navigation
+### ~~Code Navigation~~
 
-We intend to implement a client for a subset of the LSP narrowly focused on code navigation.
-We intend to support the following requests.
+~~We intend to implement a client for a subset of the LSP narrowly focused on code navigation.~~
+~~We intend to support the following requests.~~
 
-- Goto Definition
-- Find References
-- Hover
-- Document Symbols
-- Completion Proposals
-- Completion Item Resolve Request
+- ~~Goto Definition~~
+- ~~Find References~~
+- ~~Hover~~
+- ~~Document Symbols~~
+- ~~Completion Proposals~~
+- ~~Completion Item Resolve Request~~
 
-The intention is to make code navigation possible for languages that don't have a more-robust language server.
-A simple language server supporting these requests could be implemented using SQLite or even Ctags, for example.
-Such a language server can watch for file save events and re-index a file on save.
-This workflow decouples the background task of generating code navigation information from the forground task of presenting the information in the text editor.
+~~The intention is to make code navigation possible for languages that don't have a more-robust language server.~~
+~~A simple language server supporting these requests could be implemented using SQLite or even Ctags, for example.~~
+~~Such a language server can watch for file save events and re-index a file on save.~~
+~~This workflow decouples the background task of generating code navigation information from the forground task of presenting the information in the text editor.~~
 
-### Startup and shutdown commands
+This was made redundant, since we added a full LSP client from a library.
 
-Commands to run on extention activation and extention deactivation.
-The intent is that you launch a filewatcher that runs a compiler or linter on file change.
-This compiler or linter should write its output to a JSON file in the format described in [Diagnostics](#diagnostics).
-This workflow decouples the background task of generating code diagnostics information from the forground task of presenting the information in the text editor.
+### ~~Startup and shutdown commands~~
+
+~~Commands to run on extention activation and extention deactivation.~~
+~~The intent is that you launch a filewatcher that runs a compiler or linter on file change.~~
+~~This compiler or linter should write its output to a JSON file in the format described in [Diagnostics](#diagnostics).~~
+~~This workflow decouples the background task of generating code diagnostics information from the forground task of presenting the information in the text editor.~~
+
+This is made redundant, since the LSP client takes care of that for us.

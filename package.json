@@ -2,7 +2,7 @@
   "name": "alloglot",
   "displayName": "Alloglot",
   "description": "Language agnostic IDE for VS Code",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "publisher": "friedbrice",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
@@ -49,19 +49,9 @@
     "configuration": {
       "title": "Alloglot",
       "properties": {
-        "alloglot.startCommand": {
-          "type": "string",
-          "description": "A command to run in a child process on startup. (TODO)",
-          "default": ""
-        },
-        "alloglot.stopCommand": {
-          "type": "string",
-          "description": "A command to run on shutdown. `${pid}` will be interpolated with the process ID of the startup process. (TODO)",
-          "default": ""
-        },
         "alloglot.languages": {
           "type": "array",
-          "description": "An array of language configurations. See README.md.",
+          "description": "An array of language configurations. See README.md for schema.",
           "default": [],
           "items": {
             "type": "object",
@@ -69,6 +59,11 @@
               "languageId": {
                 "type": "string",
                 "description": "The unique language ID. You can usually find this in a language's syntax-highlighting extension.",
+                "default": ""
+              },
+              "serverCommand": {
+                "type": "string",
+                "description": "A command to start the language server.",
                 "default": ""
               },
               "formatCommand": {
@@ -118,5 +113,8 @@
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
-  "extensionDependencies": []
+  "extensionDependencies": [],
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
 }
