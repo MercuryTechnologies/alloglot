@@ -1,4 +1,4 @@
-# Current
+# 1.2.0
 
 - Implement LSP client
 
