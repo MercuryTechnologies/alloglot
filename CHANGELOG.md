@@ -1,6 +1,6 @@
 # Current
 
-- Improve documentation
+- Implement LSP client
 
 # 1.0.3
 
