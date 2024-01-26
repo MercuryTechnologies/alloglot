@@ -4,53 +4,113 @@ Language agnostic IDE for VS Code.
 
 ## Features
 
-- [x] Reads code diagnostics info by polling a list of user-supplied JSON files.
-- [x] Allows the user to configure a custom command as their code formatter.
-- [x] Allows the user to configure a custom URL for documentation/API search.
-- [x] Per-language LSP client.
-- ~~Run a user-configurable command on activation and manage the child-process. (TODO)~~ (redundant)
-- ~~Code navigation via a small subset of LSP. (TODO)~~ (redundant)
+- Full-feature generic LSP client.
+- Allows user to specify files to poll for diagnostics information.
+  - Supports arbitrary JSON formats via user-specified mapping.
+  - Mapping is configurable for each file independently.
+- Allows the user to configure a custom command as their code formatter.
+- Allows the user to configure a custom URL for documentation/API search.
+- Single extension supports arbitrarily-many language configurations.
 
 ## Configuration
 
-Alloglot uses the following configuration schema.
-
 ```typescript
-type Config = {
+/**
+ * Extension configuration.
+ */
+export type Config = {
   /**
-   * An array of language configurations.
+   * An array of per-language configurations.
    */
-  languages: Array<{
-    /**
-     * The unique language ID.
-     * You can usually find this in a language's syntax-highlighting extension.
-     */
-    languageId: string
+  languages: Array<LanguageConfig>
+}
 
-    /**
-     * A command to start the language server.
-     */
-    serverCommand: string
+/**
+ * Configuration for an arbitrary language.
+ */
+export type LanguageConfig = {
+  /**
+   * The unique language ID.
+   * You can usually find this in a language's syntax-highlighting extension.
+   */
+  languageId: string
 
-    /**
-     * A formatter command.
-     * Reads from STDIN and writes to STDOUT.
-     * `${file}` will be interpolated with the path to the file.
-     */
-    formatCommand: string
+  /**
+   * A command to start the language server.
+   */
+  serverCommand?: string
 
-    /**
-     * URL to documentation/API search.
-     * `${query}` will be interpolated with the symbol under cursor.
-     */
-    apiSearchUrl: string
+  /**
+   * A formatter command.
+   * Reads from STDIN and writes to STDOUT.
+   * `${file}` will be interpolated with the path to the file.
+   */
+  formatCommand?: string
 
-    /**
-     * JSON files that will be polled for diagnostics.
-     * See README.md for the format.
-     */
-    annotationsFiles: Array<string>
-  }>
+  /**
+   * URL to documentation/API search.
+   * `${query}` will be interpolated with the symbol under cursor.
+   */
+  apiSearchUrl?: string
+
+  /**
+   * A list of files to watch for compiler-generated JSON output.
+   */
+  annotations?: Array<AnnotationsConfig>
+}
+
+/**
+ * A file to watch for compiler-generated JSON output, and instructions on how to marshal the JSON objects.
+ */
+export type AnnotationsConfig = {
+  /**
+   * The path to the file to watch.
+   */
+  file: string
+
+  /**
+   * `json` for a top-level array of objects.
+   * `jsonl` for a newline-separated stream of objects.
+   */
+  format: 'json' | 'jsonl'
+
+  /**
+   * Mapping between properties of the JSON objects and properties of `Annotation`.
+   */
+  mapping: AnnotationsMapping
+}
+
+/**
+ * Intermediate representation of compiler-generated JSON output and VS Code diagnostics.
+ */
+export type Annotation = {
+  source: string
+  severity: 'error' | 'warning' | 'info' | 'hint'
+  file: string
+  startLine: number
+  startColumn: number
+  endLine: number
+  endColumn: number
+  message: string
+  replacements: Array<string>
+  referenceCode?: string
+}
+
+/**
+ * Mapping between arbitrary JSON object and properties of `Annotation`.
+ * Each property is an array of strings that will be used as a path into the JSON object.
+ */
+export type AnnotationsMapping = {
+  message: Array<string>
+  file?: Array<string>
+  startLine?: Array<string>
+  startColumn?: Array<string>
+  endLine?: Array<string>
+  endColumn?: Array<string>
+  source?: Array<string>
+  severity?: Array<string>
+  replacements?: Array<string>
+  referenceCode?: Array<string>
 }
 ```
 
@@ -64,108 +124,20 @@ An example configuration follows.
       "serverCommand": "static-ls",
       "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
       "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
-      "annotationsFiles": "ghcid.txt"
+      "annotations": {
+        "file": "ghcid.out",
+        "format": "jsonl",
+        "mapping": {
+          "file": ["span", "file"],
+          "startLine": ["span", "startLine"],
+          "startColumn": ["span", "startCol"],
+          "endLine": ["span", "endLine"],
+          "endColumn": ["span", "endCol"],
+          "message": ["doc"],
+          "severity": ["messageClass"]
+        }
+      }
     }
   ]
 }
 ```
-
-## Diagnostics JSON format
-
-Alloglot provides diagnostics information by polling a user-configurable list of JSON files.
-The intention is that you start a filewatcher that runs a compiler on file save in a terminal, with the compiler writing its output to a JSON file.
-On creation or change of the JSON file, Alloglot will read the file and interface with VS Code's diagnostics API.
-The diagnostics will remain until the JSON file is changed or deleted.
-This allows arbitrary sources of diagnostics, even for languages that have no VS Code extension.
-
-Alloglot expects the JSON file be a list of _annotations,_ objects adhering to the following format.
-
-```typescript
-type Annotation = {
-  /**
-   * Source of this annotation.
-   * E.g. the name of the compiler or linter that created it.
-   */
-  source: string
-
-  /**
-   * The diagnostic-severity levels supported by VS Code.
-   */
-  severity: 'error' | 'warning' | 'info' | 'hint'
-
-  /**
-   * Path to the file to which this diagnostic applies, relative to project root.
-   */
-  file: string
-
-  /**
-   * Document span info.
-   * Lines and columns should be indexed from 1
-   */
-  startLine: number
-
-  /**
-   * Document span info.
-   * Lines and columns should be indexed from 1
-   */
-  startColumn: number
-
-  /**
-   * Document span info.
-   * Lines and columns should be indexed from 1
-   */
-  endLine: number
-
-  /**
-   * Document span info.
-   * Lines and columns should be indexed from 1
-   */
-  endColumn: number
-
-  /**
-   * The error/warning message text.
-   */
-  message: string
-
-  /**
-   * List of textual replacements, in any, for VS Code's _Quick Fix_ feature.
-   */
-  replacements: Array<string>
-
-  /**
-   * Reference code for the error/warning message.
-   * E.g. `"ts(2552)"`.
-   */
-  referenceCode?: string
-}
-```
-
-## ~~Future work~~
-
-### ~~Code Navigation~~
-
-~~We intend to implement a client for a subset of the LSP narrowly focused on code navigation.~~
-~~We intend to support the following requests.~~
-
-- ~~Goto Definition~~
-- ~~Find References~~
-- ~~Hover~~
-- ~~Document Symbols~~
-- ~~Completion Proposals~~
-- ~~Completion Item Resolve Request~~
-
-~~The intention is to make code navigation possible for languages that don't have a more-robust language server.~~
-~~A simple language server supporting these requests could be implemented using SQLite or even Ctags, for example.~~
-~~Such a language server can watch for file save events and re-index a file on save.~~
-~~This workflow decouples the background task of generating code navigation information from the forground task of presenting the information in the text editor.~~
-
-This was made redundant, since we added a full LSP client from a library.
-
-### ~~Startup and shutdown commands~~
-
-~~Commands to run on extention activation and extention deactivation.~~
-~~The intent is that you launch a filewatcher that runs a compiler or linter on file change.~~
-~~This compiler or linter should write its output to a JSON file in the format described in [Diagnostics](#diagnostics).~~
-~~This workflow decouples the background task of generating code diagnostics information from the forground task of presenting the information in the text editor.~~
-
-This is made redundant, since the LSP client takes care of that for us.

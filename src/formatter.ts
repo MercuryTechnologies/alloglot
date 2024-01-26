@@ -26,17 +26,21 @@ Portions of this software are derived from [vscode-custom-local-formatters](http
 import { exec } from 'child_process'
 import * as vscode from 'vscode'
 
-import { Config, Elem } from "./config";
+import { LanguageConfig } from "./config";
 
-export function makeFormatter(config: Elem<Config['languages']>): vscode.Disposable {
-  if (!config.formatCommand) return { dispose: () => { } }
-
+/**
+ * Register a custom document formatter for a language.
+ */
+export function makeFormatter(config: LanguageConfig): vscode.Disposable {
+  const { languageId, formatCommand } = config
+  if (!languageId || !formatCommand) return vscode.Disposable.from()
+  if (!formatCommand) return vscode.Disposable.from()
   return vscode.languages.registerDocumentFormattingEditProvider(
-    config.languageId,
+    languageId,
     {
       provideDocumentFormattingEdits: document => {
-        const command = config.formatCommand.replace('${file}', document.fileName)
-        const cwd = getWorkspaceFolder(document)
+        const command = formatCommand.replace('${file}', document.fileName)
+        const cwd = utils.getWorkspaceFolder(document)
         const documentText = document.getText();
         const entireDocument = new vscode.Range(
           document.lineAt(0).range.start,
@@ -59,8 +63,10 @@ export function makeFormatter(config: Elem<Config['languages']>): vscode.Disposa
   )
 }
 
-function getWorkspaceFolder(document: vscode.TextDocument): string | undefined {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri)
-  const backupFolder = vscode.workspace.workspaceFolders?.[0]
-  return workspaceFolder?.uri?.fsPath || backupFolder?.uri.fsPath
+namespace utils {
+  export function getWorkspaceFolder(document: vscode.TextDocument): string | undefined {
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri)
+    const backupFolder = vscode.workspace.workspaceFolders?.[0]
+    return workspaceFolder?.uri?.fsPath || backupFolder?.uri.fsPath
+  }
 }

@@ -209,9 +209,11 @@ import * as vscode from 'vscode'
 import { Config, alloglot } from './config'
 
 export function makeApiSearch(config: Config): vscode.Disposable {
-  const langs: Map<string, string> = new Map()
+  const { languages } = config
+  if (languages.length === 0) return vscode.Disposable.from()
 
-  config.languages.forEach(lang => {
+  const langs: Map<string, string> = new Map()
+  languages.forEach(lang => {
     lang.languageId && lang.apiSearchUrl && langs.set(lang.languageId, lang.apiSearchUrl)
   })
 

@@ -22,18 +22,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "alloglot.start",
-        "title": "Alloglot: Start"
-      },
-      {
-        "command": "alloglot.stop",
-        "title": "Alloglot: Stop"
-      },
-      {
-        "command": "alloglot.restart",
-        "title": "Alloglot: Restart"
-      },
-      {
         "command": "alloglot.apisearch",
         "title": "Alloglot: Api search"
       }
@@ -55,34 +43,120 @@
           "default": [],
           "items": {
             "type": "object",
+            "required": [
+              "languageId"
+            ],
             "properties": {
               "languageId": {
-                "type": "string",
-                "description": "The unique language ID. You can usually find this in a language's syntax-highlighting extension.",
-                "default": ""
+                "type": "string"
               },
               "serverCommand": {
                 "type": "string",
-                "description": "A command to start the language server.",
-                "default": ""
+                "default": null
               },
               "formatCommand": {
                 "type": "string",
-                "description": "A formatter command. Reads from STDIN and writes to STDOUT. `${file}` will be interpolated with the path to the file.",
-                "default": ""
+                "default": null
               },
               "apiSearchUrl": {
                 "type": "string",
-                "description": "URL to documentation/API search. `${query}` will be interpolated with the symbol under cursor.",
-                "default": ""
+                "default": null
               },
               "annotationsFiles": {
                 "type": "array",
-                "default": [],
+                "default": null,
                 "items": {
-                  "type": "string",
-                  "description": "JSON files that will be polled for diagnostics. See README.md for the format.",
-                  "default": ""
+                  "type": "object",
+                  "required": [
+                    "file",
+                    "format",
+                    "mapping"
+                  ],
+                  "properties": {
+                    "file": {
+                      "type": "string"
+                    },
+                    "format": {
+                      "type": "string"
+                    },
+                    "mapping": {
+                      "type": "object",
+                      "required": [
+                        "message"
+                      ],
+                      "properties": {
+                        "message": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "file": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        },
+                        "startLine": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        },
+                        "startColumn": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        },
+                        "endLine": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        },
+                        "endColumn": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        },
+                        "source": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        },
+                        "severity": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        },
+                        "replacements": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        },
+                        "referenceCode": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": null
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
