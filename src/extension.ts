@@ -2,70 +2,41 @@ import * as vscode from 'vscode'
 
 import { makeAnnotations } from './annotations'
 import { makeApiSearch } from './apisearch'
-import { Config, alloglot } from './config'
+import { Config, LanguageConfig, alloglot } from './config'
 import { makeFormatter } from './formatter'
 import { makeClient } from './client'
 
-export function activate(context: vscode.ExtensionContext) {
-  initializeMetafeatures(context, initializeFeatures(context))
-}
+export function activate(context: vscode.ExtensionContext): void {
+  const settingsSection = vscode.workspace.getConfiguration(alloglot.root)
 
-function initializeFeatures(context: vscode.ExtensionContext): vscode.Disposable {
-  const config: Config = (() => {
-
-    const settings = vscode.workspace.getConfiguration(alloglot.root)
-
-    const languages = settings
-      .get<Config['languages']>(alloglot.config.languages, [])
-      .filter(lang => lang.languageId.trim())
-      .map(lang => {
-        return {
-          languageId: lang.languageId.trim(),
-          serverCommand: lang.serverCommand.trim(),
-          formatCommand: lang.formatCommand.trim(),
-          apiSearchUrl: lang.apiSearchUrl.trim(),
-          annotationsFiles: lang.annotationsFiles.filter(x => x.trim()).map(x => x.trim())
-        }
+  const config: Config = {
+    languages: settingsSection
+      .get<Array<LanguageConfig>>(alloglot.config.languages, [])
+      // make sure no fields are whitespace-only
+      // we mutate the original object because typescript doesn't have a `filterMap` function
+      .filter(lang => {
+        lang['languageId'] = lang.languageId.trim()
+        lang['serverCommand'] = lang.serverCommand?.trim()
+        lang['formatCommand'] = lang.formatCommand?.trim()
+        lang['apiSearchUrl'] = lang.apiSearchUrl?.trim()
+        lang['annotations'] = lang.annotations?.filter(ann => {
+          ann['file'] = ann.file.trim()
+          return ann.file
+        })
+        return lang.languageId
       })
+  }
 
-    return { languages }
-  })()
-
-  const features = vscode.Disposable.from(
+  context.subscriptions.push(
+    // Make a single API search command because VSCode can't dynamically create commands.
     makeApiSearch(config),
+    // But we can dynamically create diagnostics sets...
     ...config.languages.map(makeAnnotations),
+    // ...dynamically register language formatting providers...
     ...config.languages.map(makeFormatter),
+    // ...and dynamically create LSP clients.
     ...config.languages.map(makeClient)
   )
-
-  context.subscriptions.push(features)
-
-  return features
-}
-
-function initializeMetafeatures(context: vscode.ExtensionContext, features: vscode.Disposable): vscode.Disposable {
-  const metafeatures = vscode.Disposable.from(
-    vscode.workspace.onDidChangeConfiguration(event => {
-      if (!event.affectsConfiguration(alloglot.root)) return
-      features.dispose()
-      initializeFeatures(context)
-    }),
-    vscode.commands.registerCommand(alloglot.commands.start, () => {
-      features.dispose()
-      initializeFeatures(context)
-    }),
-    vscode.commands.registerCommand(alloglot.commands.restart, () => {
-      features.dispose()
-      initializeFeatures(context)
-    }),
-    vscode.commands.registerCommand(alloglot.commands.stop, () => {
-      features.dispose()
-    })
-  )
-
-  context.subscriptions.push(metafeatures)
-
-  return vscode.Disposable.from(features, metafeatures)
 }
 
 export function deactivate() { }

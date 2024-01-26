@@ -1,3 +1,10 @@
+# Current
+
+- remove "start", "stop", and "restart" commands (they were broken)
+- marshal arbitrary JSON to Annotation via use-configurable paths
+- `makeClient` now cleans up its resources correctly
+- Add documentation
+
 # 1.2.0
 
 - Implement LSP client
