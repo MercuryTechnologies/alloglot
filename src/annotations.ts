@@ -41,7 +41,7 @@ export function makeAnnotations(config: LanguageConfig): vscode.Disposable {
   const { languageId, annotations } = config
   if (!languageId || !annotations || annotations.length === 0) return vscode.Disposable.from()
 
-  const diagnostics = vscode.languages.createDiagnosticCollection(alloglot.collections.annotations)
+  const diagnostics = vscode.languages.createDiagnosticCollection(`${alloglot.collections.annotations}-${languageId}`)
   const watchers: Array<vscode.Disposable> = annotations.map(file => watchAnnotationsFile(diagnostics, file))
 
   const quickFixes = vscode.languages.registerCodeActionsProvider(
@@ -66,7 +66,7 @@ function watchAnnotationsFile(diagnostics: vscode.DiagnosticCollection, cfg: Ann
   const endColumnPath = utils.path<number>(cfg.mapping.endColumn)
   const sourcePath = utils.path<string>(cfg.mapping.source)
   const severityPath = utils.path<string>(cfg.mapping.severity)
-  const replacementsPath = utils.path<Array<string>>(cfg.mapping.replacements)
+  const replacementsPath = utils.path<string | Array<string>>(cfg.mapping.replacements)
   const referenceCodePath = utils.path<string | number>(cfg.mapping.referenceCode)
 
   function marshalAnnotation(json: any): Annotation | undefined {
@@ -79,11 +79,15 @@ function watchAnnotationsFile(diagnostics: vscode.DiagnosticCollection, cfg: Ann
     const endLine = endLinePath(json) || startLine
     const endColumn = endColumnPath(json) || startColumn
 
+    const replacements: Array<string> =
+      typeof replacementsPath(json) === 'string'
+        ? [replacementsPath(json) as string]
+        : replacementsPath(json) as Array<string>
+
     return {
-      message, file, startLine, startColumn, endLine, endColumn,
+      message, file, startLine, startColumn, endLine, endColumn, replacements,
       source: sourcePath(json) || `${cfg.file}`,
       severity: utils.parseSeverity(severityPath(json)),
-      replacements: replacementsPath(json) || [],
       referenceCode: referenceCodePath(json)?.toString(),
     }
   }
