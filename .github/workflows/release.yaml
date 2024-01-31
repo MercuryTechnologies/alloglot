@@ -40,10 +40,10 @@ jobs:
         id: npm_metadata
         run: |
           sudo apt-get install jq
-          echo "name=$(jq '.name' package.json | tr -d '"')" >> "$GITHUB_OUTPUT"
-          echo "displayName=$(jq '.displayName' package.json | tr -d '"')" >> "$GITHUB_OUTPUT"
-          echo "description=$(jq '.description' package.json | tr -d '"')" >> "$GITHUB_OUTPUT"
-          echo "version=$(jq '.version' package.json | tr -d '"')" >> "$GITHUB_OUTPUT"
+          echo "name=$(jq --raw-output '.name' package.json)" >> "$GITHUB_OUTPUT"
+          echo "displayName=$(jq --raw-output '.displayName' package.json)" >> "$GITHUB_OUTPUT"
+          echo "description=$(jq --raw-output '.description' package.json)" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq --raw-output '.version' package.json)" >> "$GITHUB_OUTPUT"
 
       - name: Build artifact
         run: npm run build
