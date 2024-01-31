@@ -34,7 +34,6 @@ import { LanguageConfig } from "./config";
 export function makeFormatter(config: LanguageConfig): vscode.Disposable {
   const { languageId, formatCommand } = config
   if (!languageId || !formatCommand) return vscode.Disposable.from()
-  if (!formatCommand) return vscode.Disposable.from()
   return vscode.languages.registerDocumentFormattingEditProvider(
     languageId,
     {

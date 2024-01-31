@@ -7,6 +7,8 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [unreleased]
 
 - Move to a new repository.
+- use a different name for each language's diagnostics collection
+- allow scalar `replacements` field
 
 ## [2.0.0] - 2024-01-25
 
