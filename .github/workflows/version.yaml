@@ -53,7 +53,10 @@ jobs:
         id: release_pr
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # I use a personal access token with the `repo` scope.
+          # Actions performed with the default GITHUB_TOKEN do not trigger subsequent actions.
+          # See <https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow>.
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           branch: release/${{ steps.bump_version.outputs.new_version }}
           delete-branch: true
           base: main
