@@ -39,6 +39,7 @@ jobs:
         run: |
           sudo apt-get install jq
           echo "old_version=$(jq --raw-output '.version' package.json)" >> "$GITHUB_OUTPUT"
+          # Bump the version and commit the changes.
           if [[ "$is_major" == "true" ]]; then
             npm version major --no-git-tag-version
           elif [[ "$is_minor" == "true" ]]; then
