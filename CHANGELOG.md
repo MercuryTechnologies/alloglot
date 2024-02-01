@@ -7,7 +7,7 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [2.0.2] - 2024-02-01
 
 - Debug language server startup.
-- Fix error in example confiuration in README.md
+- Fix error in example configuration in README.md
 
 ## [2.0.1] - 2024-01-30
 
