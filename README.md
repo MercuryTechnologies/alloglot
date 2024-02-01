@@ -14,6 +14,53 @@ Language agnostic IDE for VS Code.
 
 ## Configuration
 
+A workspace-level configuration would look something like this.
+
+```json
+{
+  "alloglot.languages": [
+    {
+      "languageId": "haskell",
+      "serverCommand": "static-ls",
+      "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
+      "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
+      "annotations": [
+        {
+          "file": "ghcid.out",
+          "format": "jsonl",
+          "mapping": {
+            "file": ["span", "file"],
+            "startLine": ["span", "startLine"],
+            "startColumn": ["span", "startCol"],
+            "endLine": ["span", "endLine"],
+            "endColumn": ["span", "endCol"],
+            "message": ["doc"],
+            "severity": ["messageClass"]
+          }
+        },
+        {
+          "file": "hlint-out.json",
+          "format": "json",
+          "mapping": {
+            "file": ["file"],
+            "startLine": ["startLine"],
+            "startColumn": ["startColumn"],
+            "endLine": ["endLine"],
+            "endColumn": ["endColumn"],
+            "message": ["hint"],
+            "severity": ["severity"],
+            "replacements": ["to"]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+The configuration schema is defined by the following typescript.
+Configuration is highly flexible, with most fields being optional.
+
 ```typescript
 /**
  * Extension configuration.
@@ -111,33 +158,5 @@ export type AnnotationsMapping = {
   severity?: Array<string>
   replacements?: Array<string>
   referenceCode?: Array<string>
-}
-```
-
-An example configuration follows.
-
-```json
-{
-  "alloglot.languages": [
-    {
-      "languageId": "haskell",
-      "serverCommand": "static-ls",
-      "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
-      "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
-      "annotations": {
-        "file": "ghcid.out",
-        "format": "jsonl",
-        "mapping": {
-          "file": ["span", "file"],
-          "startLine": ["span", "startLine"],
-          "startColumn": ["span", "startCol"],
-          "endLine": ["span", "endLine"],
-          "endColumn": ["span", "endCol"],
-          "message": ["doc"],
-          "severity": ["messageClass"]
-        }
-      }
-    }
-  ]
 }
 ```
