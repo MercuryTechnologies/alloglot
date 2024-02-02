@@ -4,6 +4,12 @@ All notable changes to the "alloglot" extension will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+
+- Fix bug in annotations file paths.
+- Fix bug in annotations where diagnostics collection are not cleaned up correctly.
+- Give each annotations file its own diagnostics collection.
+
 ## [2.0.3] - 2024-02-01
 
 - Debug language server startup.

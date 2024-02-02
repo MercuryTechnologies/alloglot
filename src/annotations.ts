@@ -33,6 +33,7 @@ Portions of this software are derived from [ghcid](https://github.com/ndmitchell
 > OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+import { dirname } from 'path'
 import * as vscode from 'vscode'
 
 import { Annotation, AnnotationsConfig, LanguageConfig, alloglot } from "./config";
@@ -41,8 +42,7 @@ export function makeAnnotations(config: LanguageConfig): vscode.Disposable {
   const { languageId, annotations } = config
   if (!languageId || !annotations || annotations.length === 0) return vscode.Disposable.from()
 
-  const diagnostics = vscode.languages.createDiagnosticCollection(`${alloglot.collections.annotations}-${languageId}`)
-  const watchers: Array<vscode.Disposable> = annotations.map(file => watchAnnotationsFile(diagnostics, file))
+  const watchers: Array<vscode.Disposable> = annotations.map(cfg => watchAnnotationsFile(languageId, cfg))
 
   const quickFixes = vscode.languages.registerCodeActionsProvider(
     languageId,
@@ -52,12 +52,13 @@ export function makeAnnotations(config: LanguageConfig): vscode.Disposable {
 
   return vscode.Disposable.from(
     quickFixes,
-    ...watchers,
-    diagnostics
+    ...watchers
   )
 }
 
-function watchAnnotationsFile(diagnostics: vscode.DiagnosticCollection, cfg: AnnotationsConfig): vscode.Disposable {
+function watchAnnotationsFile(languageId: string, cfg: AnnotationsConfig): vscode.Disposable {
+  const diagnostics = vscode.languages.createDiagnosticCollection(`${alloglot.collections.annotations}-${languageId}-${cfg.file}`)
+
   const messagePath = utils.path<string>(cfg.mapping.message)
   const filePath = utils.path<string>(cfg.mapping.file)
   const startLinePath = utils.path<number>(cfg.mapping.startLine)
@@ -112,10 +113,16 @@ function watchAnnotationsFile(diagnostics: vscode.DiagnosticCollection, cfg: Ann
     return sorted
   }
 
+  function clearAnnotations(uri: vscode.Uri): void {
+    diagnostics.clear()
+  }
+
   function addAnnotations(uri: vscode.Uri): void {
+    clearAnnotations(uri)
+    const basedir = vscode.Uri.file(dirname(uri.fsPath))
     vscode.workspace.fs.readFile(uri).then(bytes => {
-      annotationsBySourceFile(readAnnotations(bytes)).forEach((anns, path) => {
-        diagnostics.set(vscode.Uri.file(path), anns.map(utils.annotationAsDiagnostic))
+      annotationsBySourceFile(readAnnotations(bytes)).forEach((anns, file) => {
+        diagnostics.set(vscode.Uri.joinPath(basedir, file), anns.map(ann => utils.annotationAsDiagnostic(basedir, ann)))
       })
     })
   }
@@ -126,7 +133,7 @@ function watchAnnotationsFile(diagnostics: vscode.DiagnosticCollection, cfg: Ann
 
     watcher.onDidChange(addAnnotations)
     watcher.onDidCreate(addAnnotations)
-    watcher.onDidDelete(diagnostics.delete)
+    watcher.onDidDelete(clearAnnotations)
 
     return watcher
   }) || []
@@ -135,7 +142,7 @@ function watchAnnotationsFile(diagnostics: vscode.DiagnosticCollection, cfg: Ann
 }
 
 namespace utils {
-  export function annotationAsDiagnostic(ann: Annotation): vscode.Diagnostic {
+  export function annotationAsDiagnostic(basedir: vscode.Uri, ann: Annotation): vscode.Diagnostic {
     const range = new vscode.Range(
       new vscode.Position(ann.startLine - 1, ann.startColumn - 1),
       new vscode.Position(ann.endLine - 1, ann.endColumn - 1)
@@ -144,7 +151,7 @@ namespace utils {
     // we are abusing the relatedInformation field to store replacements
     // we look them up later when we need to create quick fixes
     const relatedInformation = ann.replacements.map(replacement => {
-      const uri = vscode.Uri.file(ann.file)
+      const uri = vscode.Uri.joinPath(basedir, ann.file)
       const location = new vscode.Location(uri, range)
       return new vscode.DiagnosticRelatedInformation(location, replacement)
     })

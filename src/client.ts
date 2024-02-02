@@ -1,4 +1,3 @@
-import * as child_process from 'child_process'
 import * as vscode from 'vscode'
 import * as lsp from 'vscode-languageclient/node'
 
@@ -39,25 +38,24 @@ export function makeClient(config: LanguageConfig): vscode.Disposable {
     workspaceFolder: vscode.workspace.workspaceFolders?.[0]
   }
 
-  output.append(`${alloglot.root} debug: Starting language client...\n`)
-
   let client = new lsp.LanguageClient(
     clientId,
-    `${alloglot.root} language client for ${languageId}`,
+    `${alloglot.root}-${languageId}`,
     serverOptions,
     clientOptions,
     false
   )
 
+  output.append(`${alloglot.root}: Starting language client...\n`)
   client.start()
-  output.append(`${alloglot.root} debug: Language client started.\n`)
+  output.append(`${alloglot.root}: Language client started.\n`)
 
   return vscode.Disposable.from(
     {
       dispose: () => {
-        output.append(`${alloglot.root} debug: Stopping language client...\n`)
+        output.append(`${alloglot.root}: Stopping language client...\n`)
         client.stop()
-        output.append(`${alloglot.root} debug: Language client stopped.\n`)
+        output.append(`${alloglot.root}: Language client stopped.\n`)
       }
     },
     output
