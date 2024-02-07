@@ -26,7 +26,7 @@ export function makeClient(config: LanguageConfig): vscode.Disposable {
     debug: serverExecutable
   }
 
-  const clientId = `${alloglot.root}-${languageId}`
+  const clientId = `${alloglot.root}-${languageId}-client}`
   const output = vscode.window.createOutputChannel(clientId)
 
   const clientOptions = {

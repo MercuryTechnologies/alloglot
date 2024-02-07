@@ -26,7 +26,7 @@ Portions of this software are derived from [vscode-custom-local-formatters](http
 import { exec } from 'child_process'
 import * as vscode from 'vscode'
 
-import { LanguageConfig } from "./config";
+import { LanguageConfig, alloglot } from "./config";
 
 /**
  * Register a custom document formatter for a language.
@@ -34,24 +34,39 @@ import { LanguageConfig } from "./config";
 export function makeFormatter(config: LanguageConfig): vscode.Disposable {
   const { languageId, formatCommand } = config
   if (!languageId || !formatCommand) return vscode.Disposable.from()
+
+  const clientId = `${alloglot.root}-${languageId}-formatter}`
+  const output = vscode.window.createOutputChannel(clientId)
+  output.append(`${alloglot.root}: Starting formatter for ${languageId}\n`)
+
   return vscode.languages.registerDocumentFormattingEditProvider(
     languageId,
     {
       provideDocumentFormattingEdits: document => {
         const command = formatCommand.replace('${file}', document.fileName)
         const cwd = utils.getWorkspaceFolder(document)
-        const documentText = document.getText();
+        const documentText = document.getText()
         const entireDocument = new vscode.Range(
           document.lineAt(0).range.start,
           document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end,
         );
 
+        output.append(`Formatting document with:\n\tcommand=${command}\n\tcwd=${cwd}\n`)
+
         return new Promise<Array<vscode.TextEdit>>((resolve, reject) => {
           const proc = exec(command, { cwd }, (error, stdout, stderr) => {
-            if (error) reject(error)
-            else if (stderr) reject(stderr)
-            else if (!stdout) resolve([])
-            else resolve([new vscode.TextEdit(entireDocument, stdout)])
+            if (error) {
+              output.append(`Error running formatter:\t${error}\n`)
+              reject(error)
+            }
+            else if (!stdout) {
+              output.append(`Formatter produced no output.\n`)
+              resolve([])
+            }
+            else {
+              stderr && output.append(`Formatter logs:\n${stderr}\n`)
+              resolve([new vscode.TextEdit(entireDocument, stdout)])
+            }
           })
 
           proc.stdin?.write(documentText)
