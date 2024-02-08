@@ -35,7 +35,7 @@ export function makeFormatter(config: LanguageConfig): vscode.Disposable {
   const { languageId, formatCommand } = config
   if (!languageId || !formatCommand) return vscode.Disposable.from()
 
-  const clientId = `${alloglot.root}-${languageId}-formatter}`
+  const clientId = `${alloglot.root}-${languageId}-formatter`
   const output = vscode.window.createOutputChannel(clientId)
   output.append(`${alloglot.root}: Starting formatter for ${languageId}\n`)
 

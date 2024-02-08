@@ -23,7 +23,7 @@
     "commands": [
       {
         "command": "alloglot.apisearch",
-        "title": "Goto documentation"
+        "title": "Go to API Search"
       }
     ],
     "menus": {

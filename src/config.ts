@@ -40,6 +40,28 @@ export type LanguageConfig = {
    * A list of files to watch for compiler-generated JSON output.
    */
   annotations?: Array<AnnotationsConfig>
+
+  /**
+   * A list of files containing identifier tags for this languages.
+   */
+  tags?: Array<TagsConfig>
+}
+
+export type TagsConfig = {
+  /**
+   * The relative path to the tags file.
+   */
+  file: string
+
+  /**
+   * Use the tags as a completions provider.
+   */
+  completions?: boolean
+
+  /**
+   * Use the tags as a definitions provider.
+   */
+  definitions?: boolean
 }
 
 /**
@@ -47,7 +69,7 @@ export type LanguageConfig = {
  */
 export type AnnotationsConfig = {
   /**
-   * The path to the file to watch.
+   * The relative path to the file to watch.
    */
   file: string
 

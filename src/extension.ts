@@ -15,13 +15,17 @@ export function activate(context: vscode.ExtensionContext): void {
       // make sure no fields are whitespace-only
       // we mutate the original object because typescript doesn't have a `filterMap` function
       .filter(lang => {
-        lang['languageId'] = lang.languageId.trim()
-        lang['serverCommand'] = lang.serverCommand?.trim()
-        lang['formatCommand'] = lang.formatCommand?.trim()
-        lang['apiSearchUrl'] = lang.apiSearchUrl?.trim()
-        lang['annotations'] = lang.annotations?.filter(ann => {
-          ann['file'] = ann.file.trim()
+        lang.languageId = lang.languageId.trim()
+        lang.serverCommand = lang.serverCommand?.trim()
+        lang.formatCommand = lang.formatCommand?.trim()
+        lang.apiSearchUrl = lang.apiSearchUrl?.trim()
+        lang.annotations = lang.annotations?.filter(ann => {
+          ann.file = ann.file.trim()
           return ann.file
+        })
+        lang.tags = lang.tags?.filter(tag => {
+          tag.file = tag.file.trim()
+          return tag.file
         })
         return lang.languageId
       })
