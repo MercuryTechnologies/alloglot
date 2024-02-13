@@ -26,25 +26,25 @@ export type LanguageConfig = {
   /**
    * A formatter command.
    * Reads from STDIN and writes to STDOUT.
-   * `${file}` will be interpolated with the path to the file.
+   * `${file}` will be replaced with the path to the file.
    */
   formatCommand?: string
 
   /**
    * URL to documentation/API search.
-   * `${query}` will be interpolated with the symbol under cursor.
+   * `${query}` will be replaced with the symbol under cursor.
    */
   apiSearchUrl?: string
+
+  /**
+   * Configuration for using a tags file to suggest completions, definitions, or imports.
+   */
+  tags?: TagsConfig
 
   /**
    * A list of files to watch for compiler-generated JSON output.
    */
   annotations?: Array<AnnotationsConfig>
-
-  /**
-   * A list of files containing identifier tags for this languages.
-   */
-  tags?: Array<TagsConfig>
 }
 
 export type TagsConfig = {
@@ -54,15 +54,52 @@ export type TagsConfig = {
   file: string
 
   /**
-   * Use the tags as a completions provider.
+   * Use the contents of this tags file to suggest completions.
    */
-  completions?: boolean
+  completionsProvider?: boolean
 
   /**
-   * Use the tags as a definitions provider.
+   * Use the contents of this tags file to go to definitions.
    */
-  definitions?: boolean
+  definitionsProvider?: boolean
+
+  /**
+   * Use the contents of this tags file to suggest imports.
+   */
+  importsProvider?: ImportsProviderConfig
 }
+
+/**
+ * Configuration to use a tags file to suggests imports.
+ */
+export type ImportsProviderConfig = {
+  /**
+   * Pattern to create an import line.
+   * `${module}` will be replaced with the module to import.
+   * `${symbol}` will be replaced with the symbol to expose.
+   */
+  importLinePattern: string,
+
+  /**
+   * Regex pattern matching the part of a file path needed to construct a module name.
+   * (We will use the entire _match,_ not any captures.)
+   * (Remember to double-escape backslashes in JSON strings.)
+   */
+  matchFromFilepath: string
+
+  /**
+   * A list of transformations to apply to the string matched by `matchFromFilepath`.
+   */
+  renderModuleName: Array<StringTransformation>
+}
+
+export type StringTransformation
+  = { tag: "replace", from: string, to: string }
+  | { tag: "split", on: string }
+  | { tag: "join", with: string }
+  | { tag: "toUpper" }
+  | { tag: "toLower" }
+  | { tag: "capitalize" }
 
 /**
  * A file to watch for compiler-generated JSON output, and instructions on how to marshal the JSON objects.
@@ -126,10 +163,9 @@ export namespace alloglot {
   }
 
   export namespace commands {
-    export const apiSearch = `${alloglot.root}.apisearch` as const
-    export const start = `${alloglot.root}.start` as const
-    export const stop = `${alloglot.root}.stop` as const
-    export const restart = `${alloglot.root}.restart` as const
+    const root = `${alloglot.root}.command` as const
+    export const apiSearch = `${root}.apisearch` as const
+    export const suggestImports = `${root}.suggestimports` as const
   }
 
   export namespace config {
