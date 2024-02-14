@@ -81,6 +81,11 @@ Most of the properties are optional, so you can make use of only the features th
 }
 ```
 
+If there is no user-level or workspace-level configuration present,
+Alloglot will read configuration from a file `.vscode/alloglot.json` if one exists.
+The format for this file is to drop the `alloglot.`-prefix on top-level keys,
+but otherwise is the same.
+
 The configuration schema is defined by the following typescript.
 Configuration is highly flexible, with most fields being optional.
 This allows use of the features you want without unwanted features getting in your way.
