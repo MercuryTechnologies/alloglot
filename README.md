@@ -125,14 +125,14 @@ export type LanguageConfig = {
   apiSearchUrl?: string
 
   /**
+   * Configuration for using a tags file to suggest completions, definitions, or imports.
+   */
+  tags?: TagsConfig
+
+  /**
    * A list of files to watch for compiler-generated JSON output.
    */
   annotations?: Array<AnnotationsConfig>
-
-  /**
-   * A list of files containing identifier tags for this languages.
-   */
-  tags?: Array<TagsConfig>
 }
 
 export type TagsConfig = {
@@ -170,23 +170,24 @@ export type ImportsProviderConfig = {
 
   /**
    * Regex pattern matching the part of a file path needed to construct a module name.
+   * (We will use the entire _match,_ not the captures.)
    * (Remember to double-escape backslashes in JSON strings.)
    */
   matchFromFilepath: string
 
   /**
-   * A list of transformations to apply to the matched module name.
+   * A list of transformations to apply to the string matched by `matchFromFilepath`.
    */
   renderModuleName: Array<StringTransformation>
 }
 
 export type StringTransformation
-  = {"command": "replace", "args": [string, string]}
-  | {"command": "split", "args": [string]}
-  | {"command": "join", "args": [string]}
-  | {"command": "toUpper"}
-  | {"command": "toLower"}
-  | {"command": "capitalize"}
+  = { tag: "replace", from: string, to: string }
+  | { tag: "split", on: string }
+  | { tag: "join", with: string }
+  | { tag: "toUpper" }
+  | { tag: "toLower" }
+  | { tag: "capitalize" }
 
 /**
  * A file to watch for compiler-generated JSON output, and instructions on how to marshal the JSON objects.

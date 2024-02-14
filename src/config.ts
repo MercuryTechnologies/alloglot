@@ -82,7 +82,7 @@ export type ImportsProviderConfig = {
 
   /**
    * Regex pattern matching the part of a file path needed to construct a module name.
-   * (We will use the entire _match,_ not any captures.)
+   * (We will use the entire _match,_ not the captures.)
    * (Remember to double-escape backslashes in JSON strings.)
    */
   matchFromFilepath: string
