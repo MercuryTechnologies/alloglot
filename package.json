@@ -22,15 +22,23 @@
   "contributes": {
     "commands": [
       {
-        "command": "alloglot.apisearch",
-        "title": "Goto documentation"
+        "command": "alloglot.command.apisearch",
+        "title": "Go to API Search"
+      },
+      {
+        "command": "alloglot.command.suggestimports",
+        "title": "Suggest Imports..."
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "alloglot.apisearch",
+          "command": "alloglot.command.apisearch",
           "group": "navigation@2"
+        },
+        {
+          "command": "alloglot.command.suggestimports",
+          "group": "navigation@3"
         }
       ]
     },

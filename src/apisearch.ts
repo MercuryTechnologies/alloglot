@@ -220,15 +220,15 @@ export function makeApiSearch(config: Config): vscode.Disposable {
   return vscode.commands.registerTextEditorCommand(
     alloglot.commands.apiSearch,
     editor => {
-      const wordRange = editor.document.getWordRangeAtPosition(editor.selection.start)
+      const { document, selection } = editor
+      const wordRange = document.getWordRangeAtPosition(selection.start)
       const query =
-        !editor.selection.isEmpty
-          ? editor.document.getText(editor.selection.with())
+        !selection.isEmpty
+          ? document.getText(selection.with())
           : wordRange
-            ? editor.document.getText(wordRange)
+            ? document.getText(wordRange)
             : ''
-
-      const pattern = langs.get(editor.document.languageId)
+      const pattern = langs.get(document.languageId)
       const url =
         pattern
           ? pattern.replace('${query}', encodeURI(query))
