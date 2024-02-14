@@ -197,8 +197,6 @@
   },
   "extensionDependencies": [],
   "dependencies": {
-    "ctagz": "^0.1.0",
-    "qfgets": "^1.1.1",
     "vscode-languageclient": "^9.0.1"
   }
 }
