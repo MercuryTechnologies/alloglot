@@ -22,22 +22,22 @@
   "contributes": {
     "commands": [
       {
-        "command": "alloglot.apisearch",
+        "command": "alloglot.command.apisearch",
         "title": "Go to API Search"
       },
       {
-        "command": "alloglot.addimport",
-        "title": "Add import..."
+        "command": "alloglot.command.suggestimports",
+        "title": "Suggest Imports..."
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "alloglot.apisearch",
+          "command": "alloglot.command.apisearch",
           "group": "navigation@2"
         },
         {
-          "command": "alloglot.addimport",
+          "command": "alloglot.command.suggestimports",
           "group": "navigation@3"
         }
       ]

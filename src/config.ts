@@ -159,7 +159,7 @@ export namespace alloglot {
   export const root = 'alloglot' as const
 
   export namespace collections {
-    export const annotations = `${alloglot.root}.annotations` as const
+    export const annotations = `${root}.annotations` as const
   }
 
   export namespace commands {
