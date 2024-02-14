@@ -35,8 +35,13 @@ Most of the properties are optional, so you can make use of only the features th
           "matchFromFilepath": "([A-Z][A-Za-z0-9_']*)(\\/([A-Z][A-Za-z0-9_']*))*\\.hs",
           "renderModuleName": [
             {
-              "command": "replace",
-              "from": "/",
+              "tag": "replace",
+              "from": "\\.hs",
+              "to": ""
+            },
+            {
+              "tag": "replace",
+              "from": "\\/",
               "to": "."
             }
           ]
