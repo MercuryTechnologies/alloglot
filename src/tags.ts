@@ -7,7 +7,7 @@ export function makeTags(config: LanguageConfig): vscode.Disposable {
   const { languageId, tags } = config
   if (!languageId || !tags) return vscode.Disposable.from()
 
-  const { completionsProvider, definitionsProvider, importsProvider } = tags
+  const { completionsProvider, definitionsProvider, importsProvider, initTagsCommand, refreshTagsCommand } = tags
 
   const basedir: vscode.Uri | undefined = vscode.workspace.workspaceFolders?.[0].uri
   const tagsUri: vscode.Uri | undefined = basedir && vscode.Uri.joinPath(basedir, tags.file)
@@ -20,9 +20,9 @@ export function makeTags(config: LanguageConfig): vscode.Disposable {
   const output = vscode.window.createOutputChannel(clientId)
   output.appendLine(`${alloglot.root}: Starting tags for ${languageId}`)
 
-  const tagsSource = makeTagsSource(basedir, tagsUri, output)
+  const tagsSource = TagsSource.make({ languageId, basedir, tagsUri, output, initTagsCommand, refreshTagsCommand })
 
-  const disposables: Array<vscode.Disposable> = []
+  const disposables: Array<vscode.Disposable> = [tagsSource]
 
   if (completionsProvider) {
     output.appendLine('Registering completions provider...')
@@ -101,7 +101,7 @@ export function makeTags(config: LanguageConfig): vscode.Disposable {
       return result.join()
     }
 
-    function renderImportLine(tag: Tag): { renderedImport?: string, renderedModuleName?: string } {
+    function renderImportLine(tag: TagsSource.Tag): { renderedImport?: string, renderedModuleName?: string } {
       output.appendLine(`Rendering import line for ${JSON.stringify(tag)}`)
 
       const fileMatcher = new RegExp(matchFromFilepath)
@@ -143,7 +143,7 @@ export function makeTags(config: LanguageConfig): vscode.Disposable {
       return new vscode.Position(0, 0)
     }
 
-    function makeImportSuggestion(document: vscode.TextDocument, tag: Tag): ImportSuggestion | undefined {
+    function makeImportSuggestion(document: vscode.TextDocument, tag: TagsSource.Tag): ImportSuggestion | undefined {
       output.appendLine(`Making import suggestion for ${JSON.stringify(tag)}`)
       const { renderedImport, renderedModuleName } = renderImportLine(tag)
       if (!renderedImport || !renderedModuleName) return undefined
@@ -200,21 +200,77 @@ type ImportSuggestion = {
   edit: vscode.WorkspaceEdit
 }
 
-type Tag = {
-  symbol: string
-  file: string
-  lineNumber: number
+type TagsSource = vscode.Disposable & {
+  findPrefix(prefix: string, limit?: number): Promise<Array<TagsSource.Tag>>
+  findExact(exact: string, limit?: number): Promise<Array<TagsSource.Tag>>
 }
 
-type TagsSource = {
-  findPrefix(prefix: string, limit?: number): Promise<Array<Tag>>
-  findExact(exact: string, limit?: number): Promise<Array<Tag>>
-}
+namespace TagsSource {
+  export type Tag = {
+    symbol: string
+    file: string
+    lineNumber: number
+  }
 
-function makeTagsSource(basedir: vscode.Uri, tagsUri: vscode.Uri, output: vscode.OutputChannel): TagsSource {
-  output.appendLine(`Creating tags source for ${tagsUri.fsPath}`)
+  export type Config = {
+    languageId: string,
+    basedir: vscode.Uri,
+    tagsUri: vscode.Uri,
+    output: vscode.OutputChannel,
+    initTagsCommand?: string,
+    refreshTagsCommand?: string
+  }
 
-  function parseTag(line: string): Tag | undefined {
+  export function make(config: Config): TagsSource {
+    const { languageId, basedir, tagsUri, output, initTagsCommand, refreshTagsCommand } = config
+    output.appendLine(`Creating tags source for ${tagsUri.fsPath}`)
+
+    if (initTagsCommand) {
+      output.appendLine('Initializing tags file...')
+      asyncRunProc(output, initTagsCommand, basedir, () => undefined)
+      output.appendLine('Tags file initialized.')
+    }
+
+    const onSaveWatcher = (() => {
+      if (!refreshTagsCommand) return vscode.Disposable.from()
+
+      const refreshTags = (doc: vscode.TextDocument) => {
+        if (doc.languageId === languageId) {
+          output.appendLine('Refreshing tags file...')
+          asyncRunProc(output, refreshTagsCommand.replace('${file}', doc.fileName), basedir, () => undefined)
+          output.appendLine('Tags file refreshed.')
+        }
+      }
+
+      return vscode.workspace.onDidSaveTextDocument(refreshTags)
+    })()
+
+    return {
+      findPrefix(prefix: string, limit: number = 100) {
+        if (!prefix) return Promise.resolve([])
+        const escaped = prefix.replace(/(["\s'$`\\])/g, '\\$1')
+        return grep(config, output, new RegExp(`^${escaped}`), limit)
+      },
+      findExact(exact: string, limit: number = 100) {
+        if (!exact) return Promise.resolve([])
+        const escaped = exact.replace(/(["\s'$`\\])/g, '\\$1')
+        return grep(config, output, new RegExp(`^${escaped}\\t`), limit)
+      },
+      dispose() {
+        onSaveWatcher.dispose()
+      }
+    }
+  }
+
+  function grep(config: Config, output: vscode.OutputChannel, regexp: RegExp, limit: number): Promise<Array<Tag>> {
+    const { tagsUri, basedir } = config
+    const command = `grep -P '${regexp.source}' ${tagsUri.fsPath} | head -n ${limit}`
+
+    output.appendLine(`Searching for ${regexp} in ${tagsUri.fsPath}...`)
+    return asyncRunProc(output, command, basedir, stdout => filterMap(stdout.split('\n'), tag => parseTag(output, tag)))
+  }
+
+  function parseTag(output: vscode.OutputChannel, line: string): Tag | undefined {
     output.appendLine(`Parsing tag line: ${line}`)
     const [symbol, file, rawLineNumber] = line.split('\t')
     let lineNumber = parseInt(rawLineNumber)
@@ -224,42 +280,34 @@ function makeTagsSource(basedir: vscode.Uri, tagsUri: vscode.Uri, output: vscode
     return tag
   }
 
-  function grep(regexp: RegExp, limit: number): Promise<Array<Tag>> {
-    output.appendLine(`Searching for ${regexp} in ${tagsUri.fsPath}...`)
-
-    const command = `grep -P '${regexp.source}' ${tagsUri.fsPath} | head -n ${limit}`
-    const cwd = basedir.fsPath
-
+  function asyncRunProc<T>(out: vscode.OutputChannel, cmd: string, dir: vscode.Uri, f: (stdout: string) => T): Promise<T> {
+    const cwd = dir.fsPath
     return new Promise((resolve, reject) => {
-      const proc = exec(command, { cwd }, (error, stdout, stderr) => {
+      out.appendLine(`Running '${cmd}' in '${cwd}'...`)
+
+      const proc = exec(cmd, { cwd }, (error, stdout, stderr) => {
         if (error) {
-          output.appendLine(`Error searching file:\t${error}`)
+          out.appendLine(`Error running '${cmd}':\n\t${error}`)
           reject(error)
         }
-        else if (!stdout) {
-          output.appendLine(`No search results.`)
-          resolve([])
-        }
-        else {
-          stderr && output.appendLine(`Search logs:\n${stderr}`)
-          resolve(stdout.split('\n').map(parseTag).filter(x => x) as Array<Tag>)
-        }
+
+        stderr && out.appendLine(`Logs running '${cmd}':\n\t${stderr}`)
+        !stdout && out.appendLine(`No output running '${cmd}'.`)
+
+        resolve(f(stdout))
       })
 
       proc.stdin?.end()
+      out.appendLine(`Ran '${cmd}'.`)
     })
   }
 
-  return {
-    findPrefix(prefix: string, limit: number = 100) {
-      if (!prefix) return Promise.resolve([])
-      const escaped = prefix.replace(/(["\s'$`\\])/g, '\\$1')
-      return grep(new RegExp(`^${escaped}`), limit)
-    },
-    findExact(exact: string, limit: number = 100) {
-      if (!exact) return Promise.resolve([])
-      const escaped = exact.replace(/(["\s'$`\\])/g, '\\$1')
-      return grep(new RegExp(`^${escaped}\\t`), limit)
+  function filterMap<T, U>(xs: Array<T>, f: (x: T) => U | undefined): Array<U> {
+    const result: Array<U> = []
+    for (const x of xs) {
+      const y = f(x)
+      if (y !== undefined) result.push(y)
     }
+    return result
   }
 }

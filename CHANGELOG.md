@@ -4,6 +4,12 @@ All notable changes to the "alloglot" extension will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+
+- Reload config and restart extension when config changes.
+- Add `initTagsCommand` and `refreshTagsCommand` to `TagsConfig`.
+- Add _Restart Alloglot_ command.
+
 ## [2.3.0] - 2024-02-14
 
 - If there the user has no user-level or workspace-level alloglot settings, settings will be read from a file `.vscode/alloglot.json` if one exists.
