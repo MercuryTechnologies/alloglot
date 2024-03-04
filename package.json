@@ -22,6 +22,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "alloglot.command.restart",
+        "title": "Restart Alloglot"
+      },
+      {
         "command": "alloglot.command.apisearch",
         "title": "Go to API Search"
       },

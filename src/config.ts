@@ -1,3 +1,6 @@
+import * as vscode from 'vscode'
+import { readFileSync } from 'fs'
+
 /**
  * Extension configuration.
  */
@@ -26,7 +29,7 @@ export type LanguageConfig = {
   /**
    * A formatter command.
    * Reads from STDIN and writes to STDOUT.
-   * `${file}` will be replaced with the path to the file.
+   * `${file}` will be replaced with the relative path to the file.
    */
   formatCommand?: string
 
@@ -54,17 +57,28 @@ export type TagsConfig = {
   file: string
 
   /**
-   * Use the contents of this tags file to suggest completions.
+   * A command to generate the tags file.
+   */
+  initTagsCommand?: string
+
+  /**
+   * A command to refresh the tags file when a file is saved.
+   * `${file}` will be replaced with the relative path to the file.
+   */
+  refreshTagsCommand?: string
+
+  /**
+   * Indicates that this tags file should be used to suggest completions.
    */
   completionsProvider?: boolean
 
   /**
-   * Use the contents of this tags file to go to definitions.
+   * Indicates that this tags file should be used to go to definitions.
    */
   definitionsProvider?: boolean
 
   /**
-   * Use the contents of this tags file to suggest imports.
+   * Indicates that this tags file should be used to suggest imports for symbols.
    */
   importsProvider?: ImportsProviderConfig
 }
@@ -155,6 +169,62 @@ export type AnnotationsMapping = {
   referenceCode?: Array<string>
 }
 
+export namespace Config {
+  export function create(): Config {
+    return sanitizeConfig(readSettings() || readFallback() || empty)
+  }
+
+  const empty: Config = { languages: [] }
+
+  function readFallback(): Config | undefined {
+    const workspaceFolders = vscode.workspace.workspaceFolders?.map(folder => folder.uri)
+    try {
+      if (workspaceFolders && workspaceFolders.length > 0) {
+        const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
+        return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
+      }
+    } catch (err) {
+      return undefined
+    }
+  }
+
+  function readSettings(): Config | undefined {
+    const languages = vscode.workspace.getConfiguration(alloglot.config.root).get<Array<LanguageConfig>>(alloglot.config.languages)
+    return languages && { languages }
+  }
+
+  function sanitizeConfig(config: Config): Config {
+    return {
+      languages: config.languages
+        .filter(lang => {
+          // make sure no fields are whitespace-only
+          // we mutate the original object because typescript doesn't have a `filterMap` function
+
+          lang.languageId = lang.languageId.trim()
+          lang.serverCommand = lang.serverCommand?.trim()
+          lang.formatCommand = lang.formatCommand?.trim()
+          lang.apiSearchUrl = lang.apiSearchUrl?.trim()
+
+          lang.annotations = lang.annotations?.filter(ann => {
+            ann.file = ann.file.trim()
+            return ann.file
+          })
+
+          if (lang.tags) {
+            lang.tags.file = lang.tags.file.trim()
+            lang.tags.initTagsCommand = lang.tags.initTagsCommand?.trim()
+            lang.tags.refreshTagsCommand = lang.tags.refreshTagsCommand?.trim()
+            if (!lang.tags?.importsProvider?.importLinePattern.trim()) lang.tags.importsProvider = undefined
+            if (!lang.tags?.importsProvider?.matchFromFilepath.trim()) lang.tags.importsProvider = undefined
+            if (!lang.tags.file) lang.tags = undefined
+          }
+
+          return lang.languageId
+        })
+    }
+  }
+}
+
 export namespace alloglot {
   export const root = 'alloglot' as const
 
@@ -164,11 +234,14 @@ export namespace alloglot {
 
   export namespace commands {
     const root = `${alloglot.root}.command` as const
+    export const restart = `${root}.restart` as const
     export const apiSearch = `${root}.apisearch` as const
     export const suggestImports = `${root}.suggestimports` as const
   }
 
   export namespace config {
+    export const root = alloglot.root
+    export const fallbackPath = `.vscode/${root}.json` as const
     export const languages = 'languages' as const
   }
 }

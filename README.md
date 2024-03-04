@@ -28,6 +28,8 @@ Most of the properties are optional, so you can make use of only the features th
       "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
       "tags": {
         "file": ".tags",
+        "initTagsCommand": "ghc-tags -c",
+        "refreshTagsCommand": "ghc-tags -c",
         "completionsProvider": true,
         "definitionsProvider": true,
         "importsProvider": {
@@ -119,7 +121,7 @@ export type LanguageConfig = {
   /**
    * A formatter command.
    * Reads from STDIN and writes to STDOUT.
-   * `${file}` will be replaced with the path to the file.
+   * `${file}` will be replaced with the relative path to the file.
    */
   formatCommand?: string
 
@@ -147,17 +149,28 @@ export type TagsConfig = {
   file: string
 
   /**
-   * Use the contents of this tags file to suggest completions.
+   * A command to generate the tags file.
+   */
+  initTagsCommand?: string
+
+  /**
+   * A command to refresh the tags file when a file is saved.
+   * `${file}` will be replaced with the relative path to the file.
+   */
+  refreshTagsCommand?: string
+
+  /**
+   * Indicates that this tags file should be used to suggest completions.
    */
   completionsProvider?: boolean
 
   /**
-   * Use the contents of this tags file to go to definitions.
+   * Indicates that this tags file should be used to go to definitions.
    */
   definitionsProvider?: boolean
 
   /**
-   * Use the contents of this tags file to suggest imports.
+   * Indicates that this tags file should be used to suggest imports for symbols.
    */
   importsProvider?: ImportsProviderConfig
 }
