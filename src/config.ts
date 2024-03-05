@@ -232,6 +232,14 @@ export namespace alloglot {
     export const annotations = `${root}.annotations` as const
   }
 
+  export namespace components {
+    export const apiSearch = 'apisearch' as const
+    export const annotations = 'annotations' as const
+    export const formatter = 'formatter' as const
+    export const client = 'client' as const
+    export const tags = 'tags' as const
+  }
+
   export namespace commands {
     const root = `${alloglot.root}.command` as const
     export const restart = `${root}.restart` as const
@@ -243,5 +251,32 @@ export namespace alloglot {
     export const root = alloglot.root
     export const fallbackPath = `.vscode/${root}.json` as const
     export const languages = 'languages' as const
+  }
+}
+
+export interface HierarchicalOutputChannel extends vscode.OutputChannel {
+  prefixPath: Array<string>
+  local(prefix: string): HierarchicalOutputChannel
+}
+
+export namespace HierarchicalOutputChannel {
+  export function make(name: string): HierarchicalOutputChannel {
+    return promote([], vscode.window.createOutputChannel(name))
+  }
+
+  function addPrefix(output: vscode.OutputChannel, prefix: string): vscode.OutputChannel {
+    return {
+      ...output,
+      append: (value: string) => output.append(`[${prefix}] ${value}`),
+      appendLine: (value: string) => output.appendLine(`[${prefix}] ${value}`)
+    }
+  }
+
+  function promote(prefixPath: Array<string>, output: vscode.OutputChannel): HierarchicalOutputChannel {
+    return {
+      ...output,
+      prefixPath,
+      local: (prefix: string) => promote([...prefixPath, prefix], addPrefix(output, prefix))
+    }
   }
 }
