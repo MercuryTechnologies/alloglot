@@ -19,7 +19,6 @@ export function activate(context: vscode.ExtensionContext): void {
   output.appendLine(`Loaded configuration:\n${JSON.stringify(config, null, 2)}`)
 
   context.subscriptions.push(
-    output,
     // Make a single API search command because VSCode can't dynamically create commands.
     makeApiSearch(output.local(alloglot.components.apiSearch), config),
     // But we can dynamically create diagnostics sets...

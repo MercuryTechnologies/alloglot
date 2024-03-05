@@ -32,7 +32,7 @@ export function makeClient(output: HierarchicalOutputChannel, config: LanguageCo
     documentSelector: [{ scheme: 'file', language: languageId }],
     synchronize: { configurationSection: alloglot.root },
     revealOutputChannelOn: lsp.RevealOutputChannelOn.Never,
-    outputChannel: output,
+    outputChannel: vscode.window.createOutputChannel(clientId),
     outputChannelName: clientId,
     workspaceFolder: vscode.workspace.workspaceFolders?.[0]
   }
@@ -56,7 +56,6 @@ export function makeClient(output: HierarchicalOutputChannel, config: LanguageCo
         client.stop()
         output.appendLine('Language client stopped.')
       }
-    },
-    output
+    }
   )
 }

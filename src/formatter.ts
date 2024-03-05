@@ -36,8 +36,7 @@ export function makeFormatter(output: HierarchicalOutputChannel, config: Languag
   if (!languageId || !formatCommand) return vscode.Disposable.from()
 
   output.appendLine('Starting formatter...')
-
-  return vscode.languages.registerDocumentFormattingEditProvider(
+  const formatter = vscode.languages.registerDocumentFormattingEditProvider(
     languageId,
     {
       provideDocumentFormattingEdits: document => {
@@ -73,6 +72,9 @@ export function makeFormatter(output: HierarchicalOutputChannel, config: Languag
       }
     }
   )
+
+  output.appendLine('Formatter started.')
+  return formatter
 }
 
 namespace utils {
