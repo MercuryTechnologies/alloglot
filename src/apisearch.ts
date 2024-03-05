@@ -206,9 +206,9 @@ Portions of this software are derived from [vscode-goto-documentation](https://g
 
 import * as vscode from 'vscode'
 
-import { Config, alloglot } from './config'
+import { Config, HierarchicalOutputChannel, alloglot } from './config'
 
-export function makeApiSearch(config: Config): vscode.Disposable {
+export function makeApiSearch(output: HierarchicalOutputChannel, config: Config): vscode.Disposable {
   const { languages } = config
   if (languages.length === 0) return vscode.Disposable.from()
 
@@ -216,6 +216,9 @@ export function makeApiSearch(config: Config): vscode.Disposable {
   languages.forEach(lang => {
     lang.languageId && lang.apiSearchUrl && langs.set(lang.languageId, lang.apiSearchUrl)
   })
+
+  output.appendLine(`Creating API search command for languages...`)
+  config.languages.forEach(lang => output.appendLine(`\t${lang.languageId}`))
 
   return vscode.commands.registerTextEditorCommand(
     alloglot.commands.apiSearch,

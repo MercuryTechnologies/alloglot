@@ -1,13 +1,13 @@
 import * as vscode from 'vscode'
 import * as lsp from 'vscode-languageclient/node'
 
-import { LanguageConfig, alloglot } from './config'
+import { HierarchicalOutputChannel, LanguageConfig, alloglot } from './config'
 
 /**
  * A full-featured generic LSP client.
  * The client launches its own server in a child process and cleans up after itself.
  */
-export function makeClient(config: LanguageConfig): vscode.Disposable {
+export function makeClient(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
   const { languageId, serverCommand } = config
   if (!languageId || !serverCommand) return vscode.Disposable.from()
 
@@ -26,8 +26,7 @@ export function makeClient(config: LanguageConfig): vscode.Disposable {
     debug: serverExecutable
   }
 
-  const clientId = `${alloglot.root}-${languageId}-client`
-  const output = vscode.window.createOutputChannel(clientId)
+  const clientId = `${alloglot.root}-${output.prefixPath.join('-')}`
 
   const clientOptions = {
     documentSelector: [{ scheme: 'file', language: languageId }],
@@ -46,16 +45,16 @@ export function makeClient(config: LanguageConfig): vscode.Disposable {
     false
   )
 
-  output.append(`${alloglot.root}: Starting language client...\n`)
+  output.appendLine('Starting language client...')
   client.start()
-  output.append(`${alloglot.root}: Language client started.\n`)
+  output.appendLine('Language client started.')
 
   return vscode.Disposable.from(
     {
       dispose: () => {
-        output.append(`${alloglot.root}: Stopping language client...\n`)
+        output.appendLine('Stopping language client...')
         client.stop()
-        output.append(`${alloglot.root}: Language client stopped.\n`)
+        output.appendLine('Language client stopped.')
       }
     },
     output

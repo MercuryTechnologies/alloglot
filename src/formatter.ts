@@ -26,18 +26,16 @@ Portions of this software are derived from [vscode-custom-local-formatters](http
 import { exec } from 'child_process'
 import * as vscode from 'vscode'
 
-import { LanguageConfig, alloglot } from "./config";
+import { HierarchicalOutputChannel, LanguageConfig, alloglot } from "./config";
 
 /**
  * Register a custom document formatter for a language.
  */
-export function makeFormatter(config: LanguageConfig): vscode.Disposable {
+export function makeFormatter(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
   const { languageId, formatCommand } = config
   if (!languageId || !formatCommand) return vscode.Disposable.from()
 
-  const clientId = `${alloglot.root}-${languageId}-formatter`
-  const output = vscode.window.createOutputChannel(clientId)
-  output.append(`${alloglot.root}: Starting formatter for ${languageId}\n`)
+  output.appendLine('Starting formatter...')
 
   return vscode.languages.registerDocumentFormattingEditProvider(
     languageId,

@@ -36,9 +36,10 @@ Portions of this software are derived from [ghcid](https://github.com/ndmitchell
 import { dirname } from 'path'
 import * as vscode from 'vscode'
 
-import { Annotation, AnnotationsConfig, LanguageConfig, alloglot } from "./config";
+import { Annotation, AnnotationsConfig, HierarchicalOutputChannel, LanguageConfig, alloglot } from "./config";
 
-export function makeAnnotations(config: LanguageConfig): vscode.Disposable {
+export function makeAnnotations(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
+  output.appendLine('Starting annotations...')
   const { languageId, annotations } = config
   if (!languageId || !annotations || annotations.length === 0) return vscode.Disposable.from()
 
@@ -50,6 +51,7 @@ export function makeAnnotations(config: LanguageConfig): vscode.Disposable {
     { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
   )
 
+  output.appendLine('Annotation started.')
   return vscode.Disposable.from(
     quickFixes,
     ...watchers

@@ -1,9 +1,9 @@
 import { exec } from 'child_process'
 import * as vscode from 'vscode'
 
-import { LanguageConfig, StringTransformation, alloglot } from './config'
+import { HierarchicalOutputChannel, LanguageConfig, StringTransformation, alloglot } from './config'
 
-export function makeTags(config: LanguageConfig): vscode.Disposable {
+export function makeTags(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
   const { languageId, tags } = config
   if (!languageId || !tags) return vscode.Disposable.from()
 
@@ -16,9 +16,7 @@ export function makeTags(config: LanguageConfig): vscode.Disposable {
 
   if (!completionsProvider && !definitionsProvider && !importsProvider) return vscode.Disposable.from()
 
-  const clientId = `${alloglot.root}-${languageId}-tags`
-  const output = vscode.window.createOutputChannel(clientId)
-  output.appendLine(`${alloglot.root}: Starting tags for ${languageId}`)
+  output.appendLine('Starting tags...')
 
   const tagsSource = TagsSource.make({ languageId, basedir, tagsUri, output, initTagsCommand, refreshTagsCommand })
 
@@ -192,6 +190,7 @@ export function makeTags(config: LanguageConfig): vscode.Disposable {
     output.appendLine('Registered imports provider.')
   }
 
+  output.appendLine('Tags started.')
   return vscode.Disposable.from(...disposables)
 }
 
@@ -200,7 +199,7 @@ type ImportSuggestion = {
   edit: vscode.WorkspaceEdit
 }
 
-type TagsSource = vscode.Disposable & {
+interface TagsSource extends vscode.Disposable {
   findPrefix(prefix: string, limit?: number): Promise<Array<TagsSource.Tag>>
   findExact(exact: string, limit?: number): Promise<Array<TagsSource.Tag>>
 }
