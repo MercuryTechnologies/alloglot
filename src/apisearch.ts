@@ -206,7 +206,8 @@ Portions of this software are derived from [vscode-goto-documentation](https://g
 
 import * as vscode from 'vscode'
 
-import { Config, HierarchicalOutputChannel, alloglot } from './config'
+import { Config, alloglot } from './config'
+import { HierarchicalOutputChannel } from './utils'
 
 export function makeApiSearch(output: HierarchicalOutputChannel, config: Config): vscode.Disposable {
   const { languages } = config

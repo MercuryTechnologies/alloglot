@@ -1,5 +1,5 @@
-import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
+import * as vscode from 'vscode'
 
 /**
  * Extension configuration.
@@ -9,6 +9,13 @@ export type Config = {
    * An array of per-language configurations.
    */
   languages: Array<LanguageConfig>
+
+  /**
+   * A shell command to run on activation.
+   * The command will run asynchronously.
+   * It will be killed (if it's still running) on deactivation.
+   */
+  activateCommand?: string
 }
 
 /**
@@ -170,7 +177,7 @@ export type AnnotationsMapping = {
 }
 
 export namespace Config {
-  export function create(): Config {
+  export function make(): Config {
     return sanitizeConfig(readSettings() || readFallback() || empty)
   }
 
@@ -190,11 +197,13 @@ export namespace Config {
 
   function readSettings(): Config | undefined {
     const languages = vscode.workspace.getConfiguration(alloglot.config.root).get<Array<LanguageConfig>>(alloglot.config.languages)
+    const activateCommand = vscode.workspace.getConfiguration(alloglot.config.root).get<Array<LanguageConfig>>(alloglot.config.activateCommand)
     return languages && { languages }
   }
 
   function sanitizeConfig(config: Config): Config {
     return {
+      activateCommand: config.activateCommand?.trim(),
       languages: config.languages
         .filter(lang => {
           // make sure no fields are whitespace-only
@@ -251,32 +260,6 @@ export namespace alloglot {
     export const root = alloglot.root
     export const fallbackPath = `.vscode/${root}.json` as const
     export const languages = 'languages' as const
-  }
-}
-
-export interface HierarchicalOutputChannel extends vscode.OutputChannel {
-  prefixPath: Array<string>
-  local(prefix: string): HierarchicalOutputChannel
-}
-
-export namespace HierarchicalOutputChannel {
-  export function make(name: string): HierarchicalOutputChannel {
-    return promote([], vscode.window.createOutputChannel(name))
-  }
-
-  function addPrefix(output: vscode.OutputChannel, prefix: string): vscode.OutputChannel {
-    return {
-      ...output,
-      append: (value: string) => output.append(`[${prefix}] ${value}`),
-      appendLine: (value: string) => output.appendLine(`[${prefix}] ${value}`)
-    }
-  }
-
-  function promote(prefixPath: Array<string>, output: vscode.OutputChannel): HierarchicalOutputChannel {
-    return {
-      ...output,
-      prefixPath,
-      local: (prefix: string) => promote([...prefixPath, prefix], addPrefix(output, prefix))
-    }
+    export const activateCommand = 'activateCommand' as const
   }
 }

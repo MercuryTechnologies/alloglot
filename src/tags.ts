@@ -1,7 +1,7 @@
-import { exec } from 'child_process'
 import * as vscode from 'vscode'
 
-import { HierarchicalOutputChannel, LanguageConfig, StringTransformation, alloglot } from './config'
+import { LanguageConfig, StringTransformation, alloglot } from './config'
+import { AsyncProcess, HierarchicalOutputChannel } from './utils'
 
 export function makeTags(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
   const { languageId, tags } = config
@@ -225,9 +225,8 @@ namespace TagsSource {
     output.appendLine(`Creating tags source for ${tagsUri.fsPath}`)
 
     if (initTagsCommand) {
-      output.appendLine('Initializing tags file...')
-      asyncRunProc(output, initTagsCommand, basedir, () => undefined)
-      output.appendLine('Tags file initialized.')
+      const command = initTagsCommand
+      AsyncProcess.make({ output, command, basedir }, () => undefined)
     }
 
     const onSaveWatcher = (() => {
@@ -235,9 +234,8 @@ namespace TagsSource {
 
       const refreshTags = (doc: vscode.TextDocument) => {
         if (doc.languageId === languageId) {
-          output.appendLine('Refreshing tags file...')
-          asyncRunProc(output, refreshTagsCommand.replace('${file}', doc.fileName), basedir, () => undefined)
-          output.appendLine('Tags file refreshed.')
+          const command = refreshTagsCommand.replace('${file}', doc.fileName)
+          AsyncProcess.make({ output, command, basedir }, () => undefined)
         }
       }
 
@@ -266,7 +264,7 @@ namespace TagsSource {
     const command = `grep -P '${regexp.source}' ${tagsUri.fsPath} | head -n ${limit}`
 
     output.appendLine(`Searching for ${regexp} in ${tagsUri.fsPath}...`)
-    return asyncRunProc(output, command, basedir, stdout => filterMap(stdout.split('\n'), tag => parseTag(output, tag)))
+    return AsyncProcess.make({ output, command, basedir }, stdout => filterMap(stdout.split('\n'), line => parseTag(output, line)))
   }
 
   function parseTag(output: vscode.OutputChannel, line: string): Tag | undefined {
@@ -277,28 +275,6 @@ namespace TagsSource {
     const tag = { symbol, file, lineNumber }
     output.appendLine(`Parsed tag: ${JSON.stringify(tag)}`)
     return tag
-  }
-
-  function asyncRunProc<T>(out: vscode.OutputChannel, cmd: string, dir: vscode.Uri, f: (stdout: string) => T): Promise<T> {
-    const cwd = dir.fsPath
-    return new Promise((resolve, reject) => {
-      out.appendLine(`Running '${cmd}' in '${cwd}'...`)
-
-      const proc = exec(cmd, { cwd }, (error, stdout, stderr) => {
-        if (error) {
-          out.appendLine(`Error running '${cmd}':\n\t${error}`)
-          reject(error)
-        }
-
-        stderr && out.appendLine(`Logs running '${cmd}':\n\t${stderr}`)
-        !stdout && out.appendLine(`No output running '${cmd}'.`)
-
-        resolve(f(stdout))
-      })
-
-      proc.stdin?.end()
-      out.appendLine(`Ran '${cmd}'.`)
-    })
   }
 
   function filterMap<T, U>(xs: Array<T>, f: (x: T) => U | undefined): Array<U> {

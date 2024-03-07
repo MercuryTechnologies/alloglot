@@ -1,7 +1,8 @@
 import * as vscode from 'vscode'
 import * as lsp from 'vscode-languageclient/node'
 
-import { HierarchicalOutputChannel, LanguageConfig, alloglot } from './config'
+import { LanguageConfig, alloglot } from './config'
+import { HierarchicalOutputChannel } from './utils'
 
 /**
  * A full-featured generic LSP client.

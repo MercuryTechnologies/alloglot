@@ -36,7 +36,8 @@ Portions of this software are derived from [ghcid](https://github.com/ndmitchell
 import { dirname } from 'path'
 import * as vscode from 'vscode'
 
-import { Annotation, AnnotationsConfig, HierarchicalOutputChannel, LanguageConfig, alloglot } from "./config";
+import { Annotation, AnnotationsConfig, LanguageConfig, alloglot } from './config'
+import { HierarchicalOutputChannel } from './utils'
 
 export function makeAnnotations(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
   output.appendLine('Starting annotations...')
