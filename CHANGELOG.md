@@ -6,6 +6,10 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+- Add activation command.
+
+## [2.4.0]
+
 - Centralized output channel.
 - Reload config and restart extension when config changes.
 - Add `initTagsCommand` and `refreshTagsCommand` to `TagsConfig`.

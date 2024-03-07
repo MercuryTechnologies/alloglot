@@ -23,6 +23,7 @@ Most of the properties are optional, so you can make use of only the features th
   "alloglot.languages": [
     {
       "languageId": "haskell",
+      "activationCommand": "ghcid",
       "serverCommand": "static-ls",
       "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
       "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
@@ -101,6 +102,13 @@ export type Config = {
    * An array of per-language configurations.
    */
   languages: Array<LanguageConfig>
+
+  /**
+   * A shell command to run on activation.
+   * The command will run asynchronously.
+   * It will be killed (if it's still running) on deactivation.
+   */
+  activateCommand?: string
 }
 
 /**
