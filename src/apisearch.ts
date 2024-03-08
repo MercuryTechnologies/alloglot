@@ -211,7 +211,7 @@ import { IHierarchicalOutputChannel } from './utils'
 
 export function makeApiSearch(output: IHierarchicalOutputChannel, config: Config): vscode.Disposable {
   const { languages } = config
-  if (languages.length === 0) return vscode.Disposable.from()
+  if (!languages || languages.length === 0) return vscode.Disposable.from()
 
   const langs: Map<string, string> = new Map()
   languages.forEach(lang => {
@@ -219,7 +219,7 @@ export function makeApiSearch(output: IHierarchicalOutputChannel, config: Config
   })
 
   output.appendLine(`Creating API search command for languages...`)
-  config.languages.forEach(lang => output.appendLine(`\t${lang.languageId}`))
+  config.languages?.forEach(lang => output.appendLine(`\t${lang.languageId}`))
 
   return vscode.commands.registerTextEditorCommand(
     alloglot.commands.apiSearch,
