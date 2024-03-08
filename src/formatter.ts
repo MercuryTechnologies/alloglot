@@ -25,7 +25,7 @@ Portions of this software are derived from [vscode-custom-local-formatters](http
 */
 import * as vscode from 'vscode'
 
-import { LanguageConfig } from './config'
+import { LanguageConfig, alloglot } from './config'
 import { AsyncProcess, Disposal, IHierarchicalOutputChannel } from './utils'
 
 /**
@@ -35,7 +35,7 @@ export function makeFormatter(output: IHierarchicalOutputChannel, config: Langua
   const { languageId, formatCommand } = config
   if (!languageId || !formatCommand) return vscode.Disposable.from()
 
-  output.appendLine('Starting formatter...')
+  output.appendLine(alloglot.ui.startingFormatter)
 
   const disposal = Disposal.make()
 
@@ -58,7 +58,7 @@ export function makeFormatter(output: IHierarchicalOutputChannel, config: Langua
     }
   )
 
-  output.appendLine('Formatter started.')
+  output.appendLine(alloglot.ui.formatterStarted)
 
   return vscode.Disposable.from(
     formatter,

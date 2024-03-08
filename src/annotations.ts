@@ -40,7 +40,7 @@ import { Annotation, AnnotationsConfig, LanguageConfig, alloglot } from './confi
 import { IHierarchicalOutputChannel } from './utils'
 
 export function makeAnnotations(output: IHierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
-  output.appendLine('Starting annotations...')
+  output.appendLine(alloglot.ui.startingAnnotations)
   const { languageId, annotations } = config
   if (!languageId || !annotations || annotations.length === 0) return vscode.Disposable.from()
 
@@ -52,7 +52,7 @@ export function makeAnnotations(output: IHierarchicalOutputChannel, config: Lang
     { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
   )
 
-  output.appendLine('Annotation started.')
+  output.appendLine(alloglot.ui.annotationsStarted)
   return vscode.Disposable.from(
     quickFixes,
     ...watchers

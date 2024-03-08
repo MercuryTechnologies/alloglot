@@ -218,7 +218,7 @@ export function makeApiSearch(output: IHierarchicalOutputChannel, config: Config
     lang.languageId && lang.apiSearchUrl && langs.set(lang.languageId, lang.apiSearchUrl)
   })
 
-  output.appendLine(`Creating API search command for languages...`)
+  output.appendLine(alloglot.ui.creatingApiSearch)
   config.languages?.forEach(lang => output.appendLine(`\t${lang.languageId}`))
 
   return vscode.commands.registerTextEditorCommand(

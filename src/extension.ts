@@ -22,15 +22,15 @@ export function activate(context: vscode.ExtensionContext): void {
   globalOutput = output
   output.show(true)
 
-  output.appendLine('Starting Alloglot...')
+  output.appendLine(alloglot.ui.startingAlloglot)
   const config = Config.make(output)
-  output.appendLine(`Using configuration:\n${JSON.stringify(config, null, 2)}`)
+  output.appendLine(alloglot.ui.usingConfig(config))
 
   const langs = config.languages || []
 
   context.subscriptions.push(
     // Start the activation command if it's configured.
-    makeActivationCommand(output, config.activateCommand),
+    makeActivationCommand(output.local(alloglot.components.activateCommand), config.activateCommand),
     // Make a single API search command because VSCode can't dynamically create commands.
     makeApiSearch(output.local(alloglot.components.apiSearch), config),
     ...langs.map(lang => makeAnnotations(output.local(`${alloglot.components.annotations}-${lang.languageId}`), lang)),
@@ -49,12 +49,12 @@ export function deactivate() {
 }
 
 function disposeAll(output?: vscode.OutputChannel, context?: vscode.ExtensionContext) {
-  output && output.appendLine('Disposing Alloglot...')
+  output && output.appendLine(alloglot.ui.disposingAlloglot)
   context?.subscriptions.forEach(sub => sub.dispose())
 }
 
 function restart(output?: vscode.OutputChannel, context?: vscode.ExtensionContext) {
-  output && output.appendLine('Restarting Alloglot...')
+  output && output.appendLine(alloglot.ui.restartingAlloglot)
   disposeAll(output, context)
   context && activate(context)
 }
@@ -62,5 +62,5 @@ function restart(output?: vscode.OutputChannel, context?: vscode.ExtensionContex
 function makeActivationCommand(output: IHierarchicalOutputChannel, command: string | undefined): vscode.Disposable {
   if (!command) return vscode.Disposable.from()
   const basedir = vscode.workspace.workspaceFolders?.[0].uri
-  return AsyncProcess.make({ output, command, basedir }, () => {})
+  return AsyncProcess.make({ output, command, basedir }, stdout => output.appendLine(stdout))
 }
