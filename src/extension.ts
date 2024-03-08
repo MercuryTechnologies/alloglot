@@ -23,19 +23,23 @@ export function activate(context: vscode.ExtensionContext): void {
   output.show(true)
 
   output.appendLine('Starting Alloglot...')
-  const config = Config.make()
+  const config = Config.make(output)
   output.appendLine(`Using configuration:\n${JSON.stringify(config, null, 2)}`)
+
+  const langs = config.languages || []
 
   context.subscriptions.push(
     // Start the activation command if it's configured.
     makeActivationCommand(output, config.activateCommand),
     // Make a single API search command because VSCode can't dynamically create commands.
     makeApiSearch(output.local(alloglot.components.apiSearch), config),
-    ...config.languages.map(lang => makeAnnotations(output.local(`${alloglot.components.annotations}-${lang.languageId}`), lang)),
-    ...config.languages.map(lang => makeFormatter(output.local(`${alloglot.components.formatter}-${lang.languageId}`), lang)),
-    ...config.languages.map(lang => makeClient(output.local(`${alloglot.components.client}-${lang.languageId}`), lang)),
-    ...config.languages.map(lang => makeTags(output.local(`${alloglot.components.tags}-${lang.languageId}`), lang)),
+    ...langs.map(lang => makeAnnotations(output.local(`${alloglot.components.annotations}-${lang.languageId}`), lang)),
+    ...langs.map(lang => makeFormatter(output.local(`${alloglot.components.formatter}-${lang.languageId}`), lang)),
+    ...langs.map(lang => makeClient(output.local(`${alloglot.components.client}-${lang.languageId}`), lang)),
+    ...langs.map(lang => makeTags(output.local(`${alloglot.components.tags}-${lang.languageId}`), lang)),
+    // Restart the extension when the configuration changes.
     vscode.workspace.onDidChangeConfiguration(ev => ev.affectsConfiguration(alloglot.config.root) && restart(output, context)),
+    // Restart the extension when the user runs the restart command.
     vscode.commands.registerCommand(alloglot.commands.restart, () => restart(output, context)),
   )
 }

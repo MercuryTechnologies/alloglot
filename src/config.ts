@@ -6,16 +6,16 @@ import * as vscode from 'vscode'
  */
 export type Config = {
   /**
-   * An array of per-language configurations.
-   */
-  languages: Array<LanguageConfig>
-
-  /**
    * A shell command to run on activation.
    * The command will run asynchronously.
    * It will be killed (if it's still running) on deactivation.
    */
   activateCommand?: string
+
+  /**
+   * An array of per-language configurations.
+   */
+  languages?: Array<LanguageConfig>
 }
 
 /**
@@ -177,59 +177,64 @@ export type AnnotationsMapping = {
 }
 
 export namespace Config {
-  export function make(): Config {
-    return sanitizeConfig(readSettings() || readFallback() || empty)
-  }
+  export function make(output: vscode.OutputChannel): Config {
+    const empty: Config = {}
 
-  const empty: Config = { languages: [] }
-
-  function readFallback(): Config | undefined {
-    const workspaceFolders = vscode.workspace.workspaceFolders?.map(folder => folder.uri)
-    try {
-      if (workspaceFolders && workspaceFolders.length > 0) {
-        const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
-        return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
+    function readFallback(): Config | undefined {
+      const workspaceFolders = vscode.workspace.workspaceFolders?.map(folder => folder.uri)
+      try {
+        if (workspaceFolders && workspaceFolders.length > 0) {
+          const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
+          output.appendLine(`Reading fallback configuration from ${fullPath.path}`)
+          return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
+        }
+      } catch (err) {
+        return undefined
       }
-    } catch (err) {
+    }
+
+    function readSettings(): Config | undefined {
+      output.appendLine('Reading configuration from workspace settings')
+      const workspaceSettings = vscode.workspace.getConfiguration(alloglot.config.root)
+      const activateCommand = workspaceSettings.get<string>(alloglot.config.activateCommand)
+      const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
+      const settingsExist = activateCommand || languages
+      output.appendLine(`Configuration exists in settings: ${settingsExist}`)
+      if (settingsExist) return { activateCommand, languages }
       return undefined
     }
-  }
 
-  function readSettings(): Config | undefined {
-    const languages = vscode.workspace.getConfiguration(alloglot.config.root).get<Array<LanguageConfig>>(alloglot.config.languages)
-    const activateCommand = vscode.workspace.getConfiguration(alloglot.config.root).get<Array<LanguageConfig>>(alloglot.config.activateCommand)
-    return languages && { languages }
+    return sanitizeConfig(readSettings() || readFallback() || empty)
   }
 
   function sanitizeConfig(config: Config): Config {
     return {
       activateCommand: config.activateCommand?.trim(),
-      languages: config.languages
-        .filter(lang => {
-          // make sure no fields are whitespace-only
-          // we mutate the original object because typescript doesn't have a `filterMap` function
+      languages: config.languages?.filter(lang => {
+        // make sure no fields are whitespace-only
+        // we mutate the original object because typescript doesn't have a `filterMap` function
 
-          lang.languageId = lang.languageId.trim()
-          lang.serverCommand = lang.serverCommand?.trim()
-          lang.formatCommand = lang.formatCommand?.trim()
-          lang.apiSearchUrl = lang.apiSearchUrl?.trim()
+        lang.languageId = lang.languageId.trim()
+        lang.serverCommand = lang.serverCommand?.trim()
+        lang.formatCommand = lang.formatCommand?.trim()
+        lang.apiSearchUrl = lang.apiSearchUrl?.trim()
 
-          lang.annotations = lang.annotations?.filter(ann => {
-            ann.file = ann.file.trim()
-            return ann.file
-          })
-
-          if (lang.tags) {
-            lang.tags.file = lang.tags.file.trim()
-            lang.tags.initTagsCommand = lang.tags.initTagsCommand?.trim()
-            lang.tags.refreshTagsCommand = lang.tags.refreshTagsCommand?.trim()
-            if (!lang.tags?.importsProvider?.importLinePattern.trim()) lang.tags.importsProvider = undefined
-            if (!lang.tags?.importsProvider?.matchFromFilepath.trim()) lang.tags.importsProvider = undefined
-            if (!lang.tags.file) lang.tags = undefined
-          }
-
-          return lang.languageId
+        lang.annotations = lang.annotations?.filter(ann => {
+          ann.file = ann.file.trim()
+          return ann.file
         })
+
+        if (lang.tags) {
+          lang.tags.file = lang.tags.file.trim()
+          lang.tags.initTagsCommand = lang.tags.initTagsCommand?.trim()
+          lang.tags.refreshTagsCommand = lang.tags.refreshTagsCommand?.trim()
+          if (!lang.tags?.importsProvider?.importLinePattern.trim()) lang.tags.importsProvider = undefined
+          if (!lang.tags?.importsProvider?.matchFromFilepath.trim()) lang.tags.importsProvider = undefined
+          if (!lang.tags.file) lang.tags = undefined
+        }
+
+        return lang.languageId
+      })
     }
   }
 }
