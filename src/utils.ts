@@ -1,7 +1,26 @@
 import { exec } from 'child_process'
 import * as vscode from 'vscode'
 
-interface AsyncProcess<T> extends vscode.Disposable, Promise<T> { }
+export interface IDisposal extends vscode.Disposable {
+  insert(disposable: vscode.Disposable): void
+}
+
+export namespace Disposal {
+  export function make(): IDisposal {
+    const disposables: Array<vscode.Disposable> = []
+    return {
+      insert(disposable) {
+        disposables.push(disposable)
+      },
+
+      dispose() {
+        disposables.forEach(disposable => disposable.dispose())
+      }
+    }
+  }
+}
+
+export interface IAsyncProcess<T> extends vscode.Disposable, Promise<T> { }
 
 export namespace AsyncProcess {
   type Spec = {
@@ -11,7 +30,7 @@ export namespace AsyncProcess {
     stdin?: string
   }
 
-  export function make<T>(spec: Spec, f: (stdout: string) => T): AsyncProcess<T> {
+  export function make<T>(spec: Spec, f: (stdout: string) => T): IAsyncProcess<T> {
     let controller: AbortController | undefined = new AbortController()
     const { signal } = controller
 
@@ -40,43 +59,52 @@ export namespace AsyncProcess {
       output.appendLine(`Ran '${command}'.`)
     })
 
-    asyncProc['dispose'] = () => {
-      // ensure that calling `dispose()` a second time is a no-op
+    asyncProc.dispose = () => {
       if (controller) {
         output.appendLine(`Killing '${command}'...`)
         controller.abort()
-        controller = undefined
+        controller = undefined // ensure that `dispose()` is idempotent
         output.appendLine(`Killed '${command}'.`)
       }
     }
 
-    return asyncProc as AsyncProcess<T>
+    return asyncProc as IAsyncProcess<T>
   }
 }
 
-export interface HierarchicalOutputChannel extends vscode.OutputChannel {
+export interface IHierarchicalOutputChannel extends vscode.OutputChannel {
   prefixPath: Array<string>
-  local(prefix: string): HierarchicalOutputChannel
+  local(prefix: string): IHierarchicalOutputChannel
 }
 
 export namespace HierarchicalOutputChannel {
-  export function make(name: string): HierarchicalOutputChannel {
+  export function make(name: string): IHierarchicalOutputChannel {
     return promote([], vscode.window.createOutputChannel(name))
   }
 
   function addPrefix(output: vscode.OutputChannel, prefix: string): vscode.OutputChannel {
     return {
       ...output,
-      append: (value: string) => output.append(`[${prefix}] ${value}`),
-      appendLine: (value: string) => output.appendLine(`[${prefix}] ${value}`)
+
+      append(value: string) {
+        output.append(`[${prefix}] ${value}`)
+      },
+
+      appendLine(value: string) {
+        output.appendLine(`[${prefix}] ${value}`)
+      }
     }
   }
 
-  function promote(prefixPath: Array<string>, output: vscode.OutputChannel): HierarchicalOutputChannel {
+  function promote(prefixPath: Array<string>, output: vscode.OutputChannel): IHierarchicalOutputChannel {
     return {
       ...output,
       prefixPath,
-      local: (prefix: string) => promote([...prefixPath, prefix], addPrefix(output, prefix)) // this part was a PITA to figure out :-p
+
+      local(prefix) {
+        // this part was a PITA to figure out :-p
+        return promote([...prefixPath, prefix], addPrefix(output, prefix))
+      }
     }
   }
 }

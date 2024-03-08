@@ -26,17 +26,19 @@ Portions of this software are derived from [vscode-custom-local-formatters](http
 import * as vscode from 'vscode'
 
 import { LanguageConfig } from './config'
-import { AsyncProcess, HierarchicalOutputChannel } from './utils'
+import { AsyncProcess, Disposal, IHierarchicalOutputChannel } from './utils'
 
 /**
  * Register a custom document formatter for a language.
  */
-export function makeFormatter(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
+export function makeFormatter(output: IHierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
   const { languageId, formatCommand } = config
-  const procs: vscode.Disposable[] = []
   if (!languageId || !formatCommand) return vscode.Disposable.from()
 
   output.appendLine('Starting formatter...')
+
+  const disposal = Disposal.make()
+
   const formatter = vscode.languages.registerDocumentFormattingEditProvider(
     languageId,
     {
@@ -50,15 +52,16 @@ export function makeFormatter(output: HierarchicalOutputChannel, config: Languag
         );
 
         const proc = AsyncProcess.make({ output, command, basedir, stdin }, stdout => [new vscode.TextEdit(entireDocument, stdout)])
-        procs.push(proc)
+        disposal.insert(proc)
         return proc
       }
     }
   )
 
   output.appendLine('Formatter started.')
+
   return vscode.Disposable.from(
     formatter,
-    ...procs
+    disposal
   )
 }

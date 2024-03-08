@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
 
 import { LanguageConfig, StringTransformation, alloglot } from './config'
-import { AsyncProcess, HierarchicalOutputChannel } from './utils'
+import { AsyncProcess, Disposal, IAsyncProcess, IHierarchicalOutputChannel } from './utils'
 
-export function makeTags(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
+export function makeTags(output: IHierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
   const { languageId, tags } = config
   if (!languageId || !tags) return vscode.Disposable.from()
 
@@ -199,7 +199,7 @@ type ImportSuggestion = {
   edit: vscode.WorkspaceEdit
 }
 
-interface TagsSource extends vscode.Disposable {
+interface ITagsSource extends vscode.Disposable {
   findPrefix(prefix: string, limit?: number): Promise<Array<TagsSource.Tag>>
   findExact(exact: string, limit?: number): Promise<Array<TagsSource.Tag>>
 }
@@ -220,13 +220,15 @@ namespace TagsSource {
     refreshTagsCommand?: string
   }
 
-  export function make(config: Config): TagsSource {
+  export function make(config: Config): ITagsSource {
     const { languageId, basedir, tagsUri, output, initTagsCommand, refreshTagsCommand } = config
     output.appendLine(`Creating tags source for ${tagsUri.fsPath}`)
 
+    const disposal = Disposal.make()
+
     if (initTagsCommand) {
       const command = initTagsCommand
-      AsyncProcess.make({ output, command, basedir }, () => undefined)
+      disposal.insert(AsyncProcess.make({ output, command, basedir }, () => undefined))
     }
 
     const onSaveWatcher = (() => {
@@ -235,7 +237,7 @@ namespace TagsSource {
       const refreshTags = (doc: vscode.TextDocument) => {
         if (doc.languageId === languageId) {
           const command = refreshTagsCommand.replace('${file}', doc.fileName)
-          AsyncProcess.make({ output, command, basedir }, () => undefined)
+          disposal.insert(AsyncProcess.make({ output, command, basedir }, () => undefined))
         }
       }
 
@@ -243,23 +245,30 @@ namespace TagsSource {
     })()
 
     return {
-      findPrefix(prefix: string, limit: number = 100) {
+      findPrefix(prefix, limit = 100) {
         if (!prefix) return Promise.resolve([])
         const escaped = prefix.replace(/(["\s'$`\\])/g, '\\$1')
-        return grep(config, output, new RegExp(`^${escaped}`), limit)
+        const proc = grep(config, output, new RegExp(`^${escaped}`), limit)
+        disposal.insert(proc)
+        return proc
       },
-      findExact(exact: string, limit: number = 100) {
+
+      findExact(exact, limit = 100) {
         if (!exact) return Promise.resolve([])
         const escaped = exact.replace(/(["\s'$`\\])/g, '\\$1')
-        return grep(config, output, new RegExp(`^${escaped}\\t`), limit)
+        const proc = grep(config, output, new RegExp(`^${escaped}\\t`), limit)
+        disposal.insert(proc)
+        return proc
       },
+
       dispose() {
         onSaveWatcher.dispose()
+        disposal.dispose()
       }
     }
   }
 
-  function grep(config: Config, output: vscode.OutputChannel, regexp: RegExp, limit: number): Promise<Array<Tag>> {
+  function grep(config: Config, output: vscode.OutputChannel, regexp: RegExp, limit: number): IAsyncProcess<Array<Tag>> {
     const { tagsUri, basedir } = config
     const command = `grep -P '${regexp.source}' ${tagsUri.fsPath} | head -n ${limit}`
 

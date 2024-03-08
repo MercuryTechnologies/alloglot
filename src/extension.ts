@@ -6,7 +6,7 @@ import { makeClient } from './client'
 import { Config, alloglot } from './config'
 import { makeFormatter } from './formatter'
 import { makeTags } from './tags'
-import { AsyncProcess, HierarchicalOutputChannel } from './utils'
+import { AsyncProcess, HierarchicalOutputChannel, IHierarchicalOutputChannel } from './utils'
 
 let globalOutput: vscode.OutputChannel | undefined
 let globalContext: vscode.ExtensionContext | undefined
@@ -55,7 +55,7 @@ function restart(output?: vscode.OutputChannel, context?: vscode.ExtensionContex
   context && activate(context)
 }
 
-function makeActivationCommand(output: HierarchicalOutputChannel, command: string | undefined): vscode.Disposable {
+function makeActivationCommand(output: IHierarchicalOutputChannel, command: string | undefined): vscode.Disposable {
   if (!command) return vscode.Disposable.from()
   const basedir = vscode.workspace.workspaceFolders?.[0].uri
   return AsyncProcess.make({ output, command, basedir }, () => {})

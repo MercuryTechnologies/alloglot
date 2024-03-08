@@ -2,13 +2,13 @@ import * as vscode from 'vscode'
 import * as lsp from 'vscode-languageclient/node'
 
 import { LanguageConfig, alloglot } from './config'
-import { HierarchicalOutputChannel } from './utils'
+import { IHierarchicalOutputChannel } from './utils'
 
 /**
  * A full-featured generic LSP client.
  * The client launches its own server in a child process and cleans up after itself.
  */
-export function makeClient(output: HierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
+export function makeClient(output: IHierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
   const { languageId, serverCommand } = config
   if (!languageId || !serverCommand) return vscode.Disposable.from()
 
