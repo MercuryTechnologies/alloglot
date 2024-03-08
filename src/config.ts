@@ -198,7 +198,7 @@ export namespace Config {
       const workspaceSettings = vscode.workspace.getConfiguration(alloglot.config.root)
       const activateCommand = workspaceSettings.get<string>(alloglot.config.activateCommand)
       const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
-      const settingsExist = activateCommand || languages
+      const settingsExist = !!(activateCommand || languages)
       output.appendLine(`Configuration exists in settings: ${settingsExist}`)
       if (settingsExist) return { activateCommand, languages }
       return undefined
