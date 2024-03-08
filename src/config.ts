@@ -187,8 +187,12 @@ export namespace Config {
           const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
           output.appendLine(`Reading fallback configuration from ${fullPath.path}`)
           return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
+        } else {
+          output.appendLine('No workspace folders found. Cannot read fallback configuration.')
+          return undefined
         }
       } catch (err) {
+        output.appendLine(`Error reading fallback configuration: ${err}`)
         return undefined
       }
     }
