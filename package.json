@@ -49,10 +49,15 @@
     "configuration": {
       "title": "Alloglot",
       "properties": {
+        "alloglot.activateCommand": {
+          "type": "string",
+          "description": "A shell command to run on activation. The command will run asynchronously. It will be killed (if it's still running) on deactivation.",
+          "default": null
+        },
         "alloglot.languages": {
           "type": "array",
           "description": "An array of language configurations. See README.md for schema.",
-          "default": [],
+          "default": null,
           "items": {
             "type": "object",
             "required": [
@@ -73,6 +78,72 @@
               "apiSearchUrl": {
                 "type": "string",
                 "default": null
+              },
+              "tags": {
+                "type": "object",
+                "default": null,
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string"
+                  },
+                  "initTagsCommand": {
+                    "type": "string"
+                  },
+                  "refreshTagsCommand": {
+                    "type": "string"
+                  },
+                  "completionsProvider": {
+                    "type": "boolean"
+                  },
+                  "definitionsProvider": {
+                    "type": "boolean"
+                  },
+                  "importsProvider": {
+                    "type": "object",
+                    "required": [
+                      "importLinePattern",
+                      "matchFromFilepath",
+                      "renderModuleName"
+                    ],
+                    "properties": {
+                      "importLinePattern": {
+                        "type": "string"
+                      },
+                      "matchFromFilepath": {
+                        "type": "string"
+                      },
+                      "renderModuleName": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "tag"
+                          ],
+                          "properties": {
+                            "tag": {
+                              "type": "string"
+                            },
+                            "from": {
+                              "type": "string"
+                            },
+                            "to": {
+                              "type": "string"
+                            },
+                            "on": {
+                              "type": "string"
+                            },
+                            "with": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               },
               "annotationsFiles": {
                 "type": "array",

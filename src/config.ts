@@ -1,14 +1,21 @@
-import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
+import * as vscode from 'vscode'
 
 /**
  * Extension configuration.
  */
 export type Config = {
   /**
+   * A shell command to run on activation.
+   * The command will run asynchronously.
+   * It will be killed (if it's still running) on deactivation.
+   */
+  activateCommand?: string
+
+  /**
    * An array of per-language configurations.
    */
-  languages: Array<LanguageConfig>
+  languages?: Array<LanguageConfig>
 }
 
 /**
@@ -170,57 +177,68 @@ export type AnnotationsMapping = {
 }
 
 export namespace Config {
-  export function create(): Config {
-    return sanitizeConfig(readSettings() || readFallback() || empty)
-  }
+  export function make(output: vscode.OutputChannel): Config {
+    const empty: Config = {}
 
-  const empty: Config = { languages: [] }
-
-  function readFallback(): Config | undefined {
-    const workspaceFolders = vscode.workspace.workspaceFolders?.map(folder => folder.uri)
-    try {
-      if (workspaceFolders && workspaceFolders.length > 0) {
-        const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
-        return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
+    function readFallback(): Config | undefined {
+      const workspaceFolders = vscode.workspace.workspaceFolders?.map(folder => folder.uri)
+      try {
+        if (workspaceFolders && workspaceFolders.length > 0) {
+          const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
+          output.appendLine(alloglot.ui.readingFallbackConfig(fullPath.path))
+          return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
+        } else {
+          output.appendLine(alloglot.ui.noWorkspaceFolders)
+          return undefined
+        }
+      } catch (err) {
+        output.appendLine(alloglot.ui.couldNotReadFallback(err))
+        return undefined
       }
-    } catch (err) {
+    }
+
+    function readSettings(): Config | undefined {
+      output.appendLine(alloglot.ui.readingWorkspaceSettings)
+      const workspaceSettings = vscode.workspace.getConfiguration(alloglot.config.root)
+      const activateCommand = workspaceSettings.get<string>(alloglot.config.activateCommand)
+      const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
+      const settingsExist = !!(activateCommand || languages)
+      output.appendLine(alloglot.ui.workspaceConfigExists(settingsExist))
+      if (settingsExist) return { activateCommand, languages }
       return undefined
     }
-  }
 
-  function readSettings(): Config | undefined {
-    const languages = vscode.workspace.getConfiguration(alloglot.config.root).get<Array<LanguageConfig>>(alloglot.config.languages)
-    return languages && { languages }
+    return sanitizeConfig(readSettings() || readFallback() || empty)
   }
 
   function sanitizeConfig(config: Config): Config {
     return {
-      languages: config.languages
-        .filter(lang => {
-          // make sure no fields are whitespace-only
-          // we mutate the original object because typescript doesn't have a `filterMap` function
+      activateCommand: config.activateCommand?.trim(),
+      languages: config.languages?.filter(lang => {
+        // make sure no fields are whitespace-only
+        // we mutate the original object because typescript doesn't have a `filterMap` function
 
-          lang.languageId = lang.languageId.trim()
-          lang.serverCommand = lang.serverCommand?.trim()
-          lang.formatCommand = lang.formatCommand?.trim()
-          lang.apiSearchUrl = lang.apiSearchUrl?.trim()
+        lang.languageId = lang.languageId.trim()
+        lang.serverCommand = lang.serverCommand?.trim()
+        lang.formatCommand = lang.formatCommand?.trim()
+        lang.apiSearchUrl = lang.apiSearchUrl?.trim()
 
-          lang.annotations = lang.annotations?.filter(ann => {
-            ann.file = ann.file.trim()
-            return ann.file
-          })
-
-          if (lang.tags) {
-            lang.tags.file = lang.tags.file.trim()
-            lang.tags.initTagsCommand = lang.tags.initTagsCommand?.trim()
-            lang.tags.refreshTagsCommand = lang.tags.refreshTagsCommand?.trim()
-            if (!lang.tags?.importsProvider?.importLinePattern.trim()) lang.tags.importsProvider = undefined
-            if (!lang.tags?.importsProvider?.matchFromFilepath.trim()) lang.tags.importsProvider = undefined
-            if (!lang.tags.file) lang.tags = undefined
-          }
-
-          return lang.languageId
+        lang.annotations = lang.annotations?.filter(ann => {
+          ann.file = ann.file.trim()
+          return ann.file
         })
+
+        if (lang.tags) {
+          lang.tags.file = lang.tags.file.trim()
+          lang.tags.initTagsCommand = lang.tags.initTagsCommand?.trim()
+          lang.tags.refreshTagsCommand = lang.tags.refreshTagsCommand?.trim()
+          if (!lang.tags?.importsProvider?.importLinePattern.trim()) lang.tags.importsProvider = undefined
+          if (!lang.tags?.importsProvider?.matchFromFilepath.trim()) lang.tags.importsProvider = undefined
+          if (!lang.tags.file) lang.tags = undefined
+        }
+
+        return lang.languageId
+      })
     }
   }
 }
@@ -228,11 +246,68 @@ export namespace Config {
 export namespace alloglot {
   export const root = 'alloglot' as const
 
+  export namespace ui {
+    export const startingAnnotations = 'Starting annotations...'
+    export const annotationsStarted = 'Annotations started.'
+    export const creatingApiSearch = 'Creating API search command for languages...'
+    export const startingLanguageClient = 'Starting language client...'
+    export const languageClientStarted = 'Language client started.'
+    export const stoppingLanguageClient = 'Stopping language client...'
+    export const languageClientStopped = 'Language client stopped.'
+    export const readingFallbackConfig = (path: string) => `Reading fallback configuration from ${path}`
+    export const noWorkspaceFolders = 'No workspace folders found. Cannot read fallback configuration.'
+    export const couldNotReadFallback = (err: any) => `Could not read fallback configuration: ${err}`
+    export const readingWorkspaceSettings = 'Reading configuration from workspace settings'
+    export const workspaceConfigExists = (exists: boolean) => `Configuration exists in settings: ${exists}`
+    export const startingAlloglot = 'Starting Alloglot...'
+    export const usingConfig = (config: any) => `Using configuration:\n${JSON.stringify(config, null, 2)}`
+    export const disposingAlloglot = 'Disposing Alloglot...'
+    export const restartingAlloglot = 'Restarting Alloglot...'
+    export const startingFormatter = 'Starting formatter...'
+    export const formatterStarted = 'Formatter started.'
+    export const startingTags = 'Starting tags...'
+    export const registeringCompletionsProvider = 'Registering completions provider...'
+    export const registeredCompletionsProvider = 'Registered completions provider.'
+    export const registeringDefinitionsProvider = 'Registering definitions provider...'
+    export const registeredDefinitionsProvider = 'Registered definitions provider.'
+    export const registeringImportsProvider = 'Registering imports provider...'
+    export const applyingTransformations = (t: any, x: string) => `Applying ${JSON.stringify(t)} to ${x}`
+    export const transformationResult = (x: string) => `Result: ${x}`
+    export const renderingImportLine = (tag: any) => `Rendering import line for ${JSON.stringify(tag)}`
+    export const usingFileMatcher = (matcher: any) => `File matcher: ${matcher}`
+    export const fileMatcherResult = (result: any) => `Match: ${result}`
+    export const renderedModuleName = (name?: string) => `Rendered module name: ${name}`
+    export const renderedImportLine = (line?: string) => `Rendered import: ${line}`
+    export const findingImportPosition = 'Finding import position...'
+    export const foundImportPosition = (line: number) => `Found import at line ${line}`
+    export const foundBlankLine = (line: number) => `Found blank line at line ${line}`
+    export const noBlankLineFound = 'No blank line found. Inserting import at start of file.'
+    export const makingImportSuggestion = (tag: any) => `Making import suggestion for ${JSON.stringify(tag)}`
+    export const addImport = (moduleName: string) => `Add import: ${moduleName}`
+    export const runningSuggestImports = 'Running suggest imports...'
+    export const pickedSuggestion = (suggestion: any) => `Picked: ${JSON.stringify(suggestion)}`
+    export const appliedEdit = (success: boolean) => `Applied edit: ${success}`
+    export const providingCodeActions = 'Providing code actions...'
+    export const registeredImportsProvider = 'Registered imports provider.'
+    export const tagsStarted = 'Tags started.'
+    export const creatingTagsSource = (path: string) => `Creating tags source for ${path}`
+    export const parsingTagLine = (line: string) => `Parsing tag line: ${line}`
+    export const parsedTagLine = (tag: any) => `Parsed tag: ${JSON.stringify(tag)}`
+    export const runningCommand = (cmd: string, cwd?: string) => `Running \`\`${cmd}'' in \`\`${cwd}''...`
+    export const errorRunningCommand = (cmd: string, err: any) => `Error running \`\`${cmd}'':\n\t${err}`
+    export const commandLogs = (cmd: string, logs: string) => `Logs from \`\`${cmd}'':\n\t${logs}`
+    export const commandNoOutput = (cmd: string) => `Received no output from \`\`${cmd}''.`
+    export const ranCommand = (cmd: string) => `Ran \`\`${cmd}''.`
+    export const killingCommand = (cmd: string) => `Killing \`\`${cmd}''...`
+    export const commandKilled = (cmd: string) => `Killed \`\`${cmd}''.`
+  }
+
   export namespace collections {
     export const annotations = `${root}.annotations` as const
   }
 
   export namespace components {
+    export const activateCommand = 'activateCommand' as const
     export const apiSearch = 'apisearch' as const
     export const annotations = 'annotations' as const
     export const formatter = 'formatter' as const
@@ -251,32 +326,6 @@ export namespace alloglot {
     export const root = alloglot.root
     export const fallbackPath = `.vscode/${root}.json` as const
     export const languages = 'languages' as const
-  }
-}
-
-export interface HierarchicalOutputChannel extends vscode.OutputChannel {
-  prefixPath: Array<string>
-  local(prefix: string): HierarchicalOutputChannel
-}
-
-export namespace HierarchicalOutputChannel {
-  export function make(name: string): HierarchicalOutputChannel {
-    return promote([], vscode.window.createOutputChannel(name))
-  }
-
-  function addPrefix(output: vscode.OutputChannel, prefix: string): vscode.OutputChannel {
-    return {
-      ...output,
-      append: (value: string) => output.append(`[${prefix}] ${value}`),
-      appendLine: (value: string) => output.appendLine(`[${prefix}] ${value}`)
-    }
-  }
-
-  function promote(prefixPath: Array<string>, output: vscode.OutputChannel): HierarchicalOutputChannel {
-    return {
-      ...output,
-      prefixPath,
-      local: (prefix: string) => promote([...prefixPath, prefix], addPrefix(output, prefix))
-    }
+    export const activateCommand = 'activateCommand' as const
   }
 }

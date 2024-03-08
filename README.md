@@ -20,7 +20,13 @@ Most of the properties are optional, so you can make use of only the features th
 
 ```json
 {
+  "alloglot.activationCommand": "ghcid",
   "alloglot.languages": [
+    {
+      "languageId": "cabal",
+      "formatCommand": "cabal-fmt --stdout",
+      "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}"
+    },
     {
       "languageId": "haskell",
       "serverCommand": "static-ls",
@@ -101,6 +107,13 @@ export type Config = {
    * An array of per-language configurations.
    */
   languages: Array<LanguageConfig>
+
+  /**
+   * A shell command to run on activation.
+   * The command will run asynchronously.
+   * It will be killed (if it's still running) on deactivation.
+   */
+  activateCommand?: string
 }
 
 /**
