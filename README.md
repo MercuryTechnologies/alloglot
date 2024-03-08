@@ -20,10 +20,15 @@ Most of the properties are optional, so you can make use of only the features th
 
 ```json
 {
+  "alloglot.activationCommand": "ghcid",
   "alloglot.languages": [
     {
+      "languageId": "cabal",
+      "formatCommand": "cabal-fmt --stdout",
+      "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}"
+    },
+    {
       "languageId": "haskell",
-      "activationCommand": "ghcid",
       "serverCommand": "static-ls",
       "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
       "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
