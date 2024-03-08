@@ -7,6 +7,7 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [unreleased]
 
 - Add activation command.
+- Fix bug in config lookup logic.
 
 ## [2.4.0]
 
