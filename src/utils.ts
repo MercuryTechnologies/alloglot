@@ -64,6 +64,7 @@ export namespace AsyncProcess {
         resolve(f(stdout))
       })
 
+      proc.stdout?.on('data', output.append)
       stdin && proc.stdin?.write(stdin)
       proc.stdin?.end()
       output.appendLine(alloglot.ui.ranCommand(command))
@@ -85,12 +86,14 @@ export namespace AsyncProcess {
 export interface IHierarchicalOutputChannel extends vscode.OutputChannel {
   prefixPath: Array<string>
   local(prefix: string): IHierarchicalOutputChannel
+  split(): IHierarchicalOutputChannel
 }
 
 export namespace HierarchicalOutputChannel {
   /**
    * Create an {@link IHierarchicalOutputChannel output channel} that can spawn children output channels that prefix lines with a path.
    * Method `local(prefix)` spawns a child channel with the supplied prefix appended to the prefix path. The spawned channel can spawn further children.
+   * Method `split()` creates a separate output channel named after the current prefix path. It will have an empty prefix path.
    * Spawned channels will have the same name as the parent channel, so messages appear in the same output window.
    */
   export function make(name: string): IHierarchicalOutputChannel {
@@ -119,6 +122,12 @@ export namespace HierarchicalOutputChannel {
       local(prefix) {
         // this part was a PITA to figure out :-p
         return promote([...prefixPath, prefix], addPrefix(output, prefix))
+      },
+
+      split() {
+        const name = [output.name, ...prefixPath].join('-')
+        output.appendLine(alloglot.ui.splittingOutputChannel(name))
+        return make(name)
       }
     }
   }

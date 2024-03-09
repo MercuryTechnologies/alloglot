@@ -27,20 +27,20 @@ export function makeClient(output: IHierarchicalOutputChannel, config: LanguageC
     debug: serverExecutable
   }
 
-  const clientId = `${alloglot.root}-${output.prefixPath.join('-')}`
+  const clientChannel = output.split()
 
   const clientOptions = {
     documentSelector: [{ scheme: 'file', language: languageId }],
     synchronize: { configurationSection: alloglot.root },
     revealOutputChannelOn: lsp.RevealOutputChannelOn.Never,
-    outputChannel: vscode.window.createOutputChannel(clientId),
-    outputChannelName: clientId,
+    outputChannel: clientChannel,
+    outputChannelName: clientChannel.name,
     workspaceFolder: vscode.workspace.workspaceFolders?.[0]
   }
 
   let client = new lsp.LanguageClient(
-    clientId,
-    `${alloglot.root}-${languageId}`,
+    clientChannel.name,
+    clientChannel.name,
     serverOptions,
     clientOptions,
     false

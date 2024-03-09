@@ -37,9 +37,8 @@ import { dirname } from 'path'
 import * as vscode from 'vscode'
 
 import { Annotation, AnnotationsConfig, LanguageConfig, alloglot } from './config'
-import { IHierarchicalOutputChannel } from './utils'
 
-export function makeAnnotations(output: IHierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
+export function makeAnnotations(output: vscode.OutputChannel, config: LanguageConfig): vscode.Disposable {
   output.appendLine(alloglot.ui.startingAnnotations)
   const { languageId, annotations } = config
   if (!languageId || !annotations || annotations.length === 0) return vscode.Disposable.from()

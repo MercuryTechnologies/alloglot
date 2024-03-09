@@ -62,5 +62,5 @@ function restart(output?: vscode.OutputChannel, context?: vscode.ExtensionContex
 function makeActivationCommand(output: IHierarchicalOutputChannel, command: string | undefined): vscode.Disposable {
   if (!command) return vscode.Disposable.from()
   const basedir = vscode.workspace.workspaceFolders?.[0].uri
-  return AsyncProcess.make({ output, command, basedir }, stdout => output.appendLine(stdout))
+  return AsyncProcess.make({ output: output.split(), command, basedir }, () => output.appendLine(alloglot.ui.activateCommandDone(command)))
 }

@@ -18,9 +18,10 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
 
   output.appendLine(alloglot.ui.startingTags)
 
-  const tagsSource = TagsSource.make({ languageId, basedir, tagsUri, output, initTagsCommand, refreshTagsCommand })
+  const tagsSource = TagsSource.make({ languageId, basedir, tagsUri, output: output.local(alloglot.components.tagsSource).split(), initTagsCommand, refreshTagsCommand })
 
-  const disposables: Array<vscode.Disposable> = [tagsSource]
+  const disposal = Disposal.make()
+  disposal.insert(tagsSource)
 
   if (completionsProvider) {
     output.appendLine(alloglot.ui.registeringCompletionsProvider)
@@ -41,31 +42,26 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
         )
     }
 
-    disposables.push(
-      vscode.languages.registerCompletionItemProvider(languageId, {
-        provideCompletionItems: (doc, pos) => getCompletions(doc, pos).then(xs => xs.map(([x, _]) => x))
-      }),
-      vscode.languages.registerInlineCompletionItemProvider(languageId, {
-        provideInlineCompletionItems: (doc, pos) => getCompletions(doc, pos).then(xs => xs.map(([_, y]) => y))
-      })
-    )
-
+    disposal.insert(vscode.languages.registerCompletionItemProvider(languageId, {
+      provideCompletionItems: (doc, pos) => getCompletions(doc, pos).then(xs => xs.map(([x, _]) => x))
+    }))
+    disposal.insert(vscode.languages.registerInlineCompletionItemProvider(languageId, {
+      provideInlineCompletionItems: (doc, pos) => getCompletions(doc, pos).then(xs => xs.map(([_, y]) => y))
+    }))
     output.appendLine(alloglot.ui.registeredCompletionsProvider)
   }
 
   if (definitionsProvider) {
     output.appendLine(alloglot.ui.registeringDefinitionsProvider)
-    disposables.push(
-      vscode.languages.registerDefinitionProvider(languageId, {
-        provideDefinition: (document, position) => {
-          const wordRange = document.getWordRangeAtPosition(position)
-          if (!wordRange) return Promise.resolve([])
-          return tagsSource
-            .findExact(document.getText(wordRange))
-            .then(tags => tags.map(tag => new vscode.Location(vscode.Uri.joinPath(basedir, tag.file), new vscode.Position(tag.lineNumber, 0))))
-        }
-      })
-    )
+    disposal.insert(vscode.languages.registerDefinitionProvider(languageId, {
+      provideDefinition: (document, position) => {
+        const wordRange = document.getWordRangeAtPosition(position)
+        if (!wordRange) return Promise.resolve([])
+        return tagsSource
+          .findExact(document.getText(wordRange))
+          .then(tags => tags.map(tag => new vscode.Location(vscode.Uri.joinPath(basedir, tag.file), new vscode.Position(tag.lineNumber, 0))))
+      }
+    }))
     output.appendLine(alloglot.ui.registeredDefinitionsProvider)
   }
 
@@ -175,24 +171,22 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
       })
     }
 
-    disposables.push(
-      vscode.commands.registerTextEditorCommand(alloglot.commands.suggestImports, runSuggestImports),
-      vscode.languages.registerCodeActionsProvider(languageId, {
-        provideCodeActions(document, range) {
-          output.appendLine(alloglot.ui.providingCodeActions)
-          return getImportSuggestions(document, range).then(xs => xs.map(x => {
-            const action = new vscode.CodeAction(x.label, vscode.CodeActionKind.QuickFix)
-            action.edit = x.edit
-            return action
-          }))
-        }
-      })
-    )
+    disposal.insert(vscode.commands.registerTextEditorCommand(alloglot.commands.suggestImports, runSuggestImports))
+    disposal.insert(vscode.languages.registerCodeActionsProvider(languageId, {
+      provideCodeActions(document, range) {
+        output.appendLine(alloglot.ui.providingCodeActions)
+        return getImportSuggestions(document, range).then(xs => xs.map(x => {
+          const action = new vscode.CodeAction(x.label, vscode.CodeActionKind.QuickFix)
+          action.edit = x.edit
+          return action
+        }))
+      }
+    }))
     output.appendLine(alloglot.ui.registeredImportsProvider)
   }
 
   output.appendLine(alloglot.ui.tagsStarted)
-  return vscode.Disposable.from(...disposables)
+  return disposal
 }
 
 type ImportSuggestion = {

@@ -207,9 +207,8 @@ Portions of this software are derived from [vscode-goto-documentation](https://g
 import * as vscode from 'vscode'
 
 import { Config, alloglot } from './config'
-import { IHierarchicalOutputChannel } from './utils'
 
-export function makeApiSearch(output: IHierarchicalOutputChannel, config: Config): vscode.Disposable {
+export function makeApiSearch(output: vscode.OutputChannel, config: Config): vscode.Disposable {
   const { languages } = config
   if (!languages || languages.length === 0) return vscode.Disposable.from()
 
