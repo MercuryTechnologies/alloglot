@@ -51,6 +51,7 @@ export function makeClient(output: IHierarchicalOutputChannel, config: LanguageC
   output.appendLine(alloglot.ui.languageClientStarted)
 
   return vscode.Disposable.from(
+    clientChannel,
     {
       dispose: () => {
         output.appendLine(alloglot.ui.stoppingLanguageClient)

@@ -17,11 +17,12 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
   if (!completionsProvider && !definitionsProvider && !importsProvider) return vscode.Disposable.from()
 
   output.appendLine(alloglot.ui.startingTags)
-
-  const tagsSource = TagsSource.make({ languageId, basedir, tagsUri, output: output.local(alloglot.components.tagsSource).split(), initTagsCommand, refreshTagsCommand })
+  const tagsSourceOutput = output.local(alloglot.components.tagsSource).split()
+  const tagsSource = TagsSource.make({ languageId, basedir, tagsUri, output: tagsSourceOutput, initTagsCommand, refreshTagsCommand })
 
   const disposal = Disposal.make()
   disposal.insert(tagsSource)
+  disposal.insert(tagsSourceOutput)
 
   if (completionsProvider) {
     output.appendLine(alloglot.ui.registeringCompletionsProvider)
