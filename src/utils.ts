@@ -64,7 +64,7 @@ export namespace AsyncProcess {
         resolve(f(stdout))
       })
 
-      proc.stdout?.on('data', output.append)
+      proc.stdout?.on('data', chunk => output.append(chunk.toString('utf-8')))
       stdin && proc.stdin?.write(stdin)
       proc.stdin?.end()
       output.appendLine(alloglot.ui.ranCommand(command))
