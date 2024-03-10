@@ -26,12 +26,12 @@ Portions of this software are derived from [vscode-custom-local-formatters](http
 import * as vscode from 'vscode'
 
 import { LanguageConfig, alloglot } from './config'
-import { AsyncProcess, Disposal, IHierarchicalOutputChannel } from './utils'
+import { AsyncProcess, Disposal } from './utils'
 
 /**
  * Register a custom document formatter for a language.
  */
-export function makeFormatter(output: IHierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
+export function makeFormatter(output: vscode.OutputChannel, config: LanguageConfig): vscode.Disposable {
   const { languageId, formatCommand } = config
   if (!languageId || !formatCommand) return vscode.Disposable.from()
 

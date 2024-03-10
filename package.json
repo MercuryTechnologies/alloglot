@@ -272,6 +272,7 @@
   },
   "extensionDependencies": [],
   "dependencies": {
+    "strip-ansi": "^7.1.0",
     "vscode-languageclient": "^9.0.1"
   }
 }

@@ -6,6 +6,10 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+- Stream activate command stdout to output channel.
+
+## [2.5.0]
+
 - Add activation command.
 - Fix bug in config lookup logic.
 
