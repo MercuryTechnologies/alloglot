@@ -9,7 +9,7 @@ export interface IDisposal extends vscode.Disposable {
 
 export namespace Disposal {
   /**
-   * Create an {@link IDisposal disposal} that when disposed will dispose of all inserted disposables.
+   * Create a {@link IDisposal disposal} that when disposed will dispose of all inserted disposables.
    */
   export function make(): IDisposal {
     const disposables: Array<vscode.Disposable> = []
@@ -64,7 +64,7 @@ export namespace AsyncProcess {
         resolve(f(stdout))
       })
 
-      proc.stdout?.on('data', chunk => output.append(chunk.toString('utf-8')))
+      proc.stdout?.on('data', chunk => output.append(stripAnsi(chunk)))
       stdin && proc.stdin?.write(stdin)
       proc.stdin?.end()
       output.appendLine(alloglot.ui.ranCommand(command))
@@ -81,6 +81,8 @@ export namespace AsyncProcess {
 
     return asyncProc as IAsyncProcess<T>
   }
+
+  const stripAnsi: (raw: string) => string = require('strip-ansi').default
 }
 
 export interface IHierarchicalOutputChannel extends vscode.OutputChannel {

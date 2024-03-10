@@ -65,7 +65,7 @@ function makeActivationCommand(parentOutput: IHierarchicalOutputChannel, command
   const output = parentOutput.split()
 
   return vscode.Disposable.from(
-    AsyncProcess.make({ output, command, basedir }, () => output.appendLine(alloglot.ui.activateCommandDone(command))),
+    AsyncProcess.make({ output, command, basedir }, () => parentOutput.appendLine(alloglot.ui.activateCommandDone(command))),
     output
   )
 }
