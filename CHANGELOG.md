@@ -8,8 +8,8 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Add `deactivateCommand` to `TConfig` to run on extension `deactivate()`
 - Add `verboseOutput` to `TConfig`. Hide some existing output behind said config.
-- Minor bugfixes in async processes.
 - Minor wording changes in some UI output messages.
+- Minor bugfixes in async processes.
 
 ## [2.5.1]
 
