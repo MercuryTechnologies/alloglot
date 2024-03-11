@@ -2,7 +2,7 @@
   "name": "alloglot",
   "displayName": "Alloglot",
   "description": "Language agnostic IDE for VS Code",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "publisher": "friedbrice",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
@@ -55,14 +55,14 @@
           "default": null
         },
         "alloglot.deactivateCommand": {
-          "type":"string",
+          "type": "string",
           "description": "A shell command to run on deactivation.",
-          "default":null
+          "default": null
         },
         "alloglot.verboseOutput": {
-          "type":"boolean",
+          "type": "boolean",
           "description": "If `true`, Alloglot will log more output.",
-          "default":null
+          "default": null
         },
         "alloglot.languages": {
           "type": "array",
