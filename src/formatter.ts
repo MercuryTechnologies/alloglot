@@ -31,7 +31,7 @@ import { AsyncProcess, Disposal } from './utils'
 /**
  * Register a custom document formatter for a language.
  */
-export function makeFormatter(output: vscode.OutputChannel, config: LanguageConfig): vscode.Disposable {
+export function makeFormatter(output: vscode.OutputChannel, config: LanguageConfig, verboseOutput: boolean): vscode.Disposable {
   const { languageId, formatCommand } = config
   if (!languageId || !formatCommand) return vscode.Disposable.from()
 
@@ -51,7 +51,11 @@ export function makeFormatter(output: vscode.OutputChannel, config: LanguageConf
           document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end,
         );
 
-        const proc = AsyncProcess.make({ output, command, basedir, stdin }, stdout => [new vscode.TextEdit(entireDocument, stdout)])
+        const proc = AsyncProcess.make(
+          { output: verboseOutput ? output : undefined, command, basedir, stdin },
+          stdout => [new vscode.TextEdit(entireDocument, stdout)]
+        )
+
         disposal.insert(proc)
         return proc
       }

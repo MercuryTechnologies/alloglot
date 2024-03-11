@@ -4,6 +4,13 @@ All notable changes to the "alloglot" extension will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+
+- Add `deactivateCommand` to `TConfig` to run on extension `deactivate()`
+- Add `verboseOutput` to `TConfig`. Hide some existing output behind said config.
+- Minor bugfixes in async processes.
+- Minor wording changes in some UI output messages.
+
 ## [2.5.1]
 
 - Stream activate command stdout to output channel.

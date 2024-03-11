@@ -20,7 +20,8 @@ Most of the properties are optional, so you can make use of only the features th
 
 ```json
 {
-  "alloglot.activationCommand": "ghcid",
+  "alloglot.activateCommand": "ghcid",
+  "alloglot.deactivateCommand": "pgrep ghc | xargs kill",
   "alloglot.languages": [
     {
       "languageId": "cabal",
@@ -102,18 +103,28 @@ This allows use of the features you want without unwanted features getting in yo
 /**
  * Extension configuration.
  */
-export type Config = {
-  /**
-   * An array of per-language configurations.
-   */
-  languages: Array<LanguageConfig>
-
+export type TConfig = {
   /**
    * A shell command to run on activation.
    * The command will run asynchronously.
    * It will be killed (if it's still running) on deactivation.
    */
   activateCommand?: string
+
+  /**
+   * A shell command to run on deactivation.
+   */
+  deactivateCommand?: string
+
+  /**
+   * An array of per-language configurations.
+   */
+  languages?: Array<LanguageConfig>
+
+  /**
+   * If `true`, Alloglot will log more output.
+   */
+  verboseOutput?: boolean
 }
 
 /**
