@@ -206,19 +206,18 @@ Portions of this software are derived from [vscode-goto-documentation](https://g
 
 import * as vscode from 'vscode'
 
-import { Config, alloglot } from './config'
+import { TConfig, alloglot } from './config'
 
-export function makeApiSearch(output: vscode.OutputChannel, config: Config): vscode.Disposable {
+export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vscode.Disposable {
   const { languages } = config
   if (!languages || languages.length === 0) return vscode.Disposable.from()
+
+  output.appendLine(alloglot.ui.creatingApiSearch(languages.map(lang => lang.languageId)))
 
   const langs: Map<string, string> = new Map()
   languages.forEach(lang => {
     lang.languageId && lang.apiSearchUrl && langs.set(lang.languageId, lang.apiSearchUrl)
   })
-
-  output.appendLine(alloglot.ui.creatingApiSearch)
-  config.languages?.forEach(lang => output.appendLine(`\t${lang.languageId}`))
 
   return vscode.commands.registerTextEditorCommand(
     alloglot.commands.apiSearch,

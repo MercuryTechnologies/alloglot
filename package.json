@@ -23,15 +23,15 @@
     "commands": [
       {
         "command": "alloglot.command.restart",
-        "title": "Restart Alloglot"
+        "title": "Alloglot: Restart Alloglot"
       },
       {
         "command": "alloglot.command.apisearch",
-        "title": "Go to API Search"
+        "title": "Alloglot: Go to API Search"
       },
       {
         "command": "alloglot.command.suggestimports",
-        "title": "Suggest Imports..."
+        "title": "Alloglot: Suggest Imports..."
       }
     ],
     "menus": {
@@ -53,6 +53,16 @@
           "type": "string",
           "description": "A shell command to run on activation. The command will run asynchronously. It will be killed (if it's still running) on deactivation.",
           "default": null
+        },
+        "alloglot.deactivateCommand": {
+          "type":"string",
+          "description": "A shell command to run on deactivation.",
+          "default":null
+        },
+        "alloglot.verboseOutput": {
+          "type":"boolean",
+          "description": "If `true`, Alloglot will log more output.",
+          "default":null
         },
         "alloglot.languages": {
           "type": "array",

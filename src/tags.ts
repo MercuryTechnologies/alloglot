@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 import { LanguageConfig, StringTransformation, alloglot } from './config'
 import { AsyncProcess, Disposal, IAsyncProcess, IHierarchicalOutputChannel } from './utils'
 
-export function makeTags(output: IHierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
+export function makeTags(output: IHierarchicalOutputChannel, config: LanguageConfig, verboseOutput: boolean): vscode.Disposable {
   const { languageId, tags } = config
   if (!languageId || !tags) return vscode.Disposable.from()
 
@@ -17,12 +17,12 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
   if (!completionsProvider && !definitionsProvider && !importsProvider) return vscode.Disposable.from()
 
   output.appendLine(alloglot.ui.startingTags)
-  const tagsSourceOutput = output.local(alloglot.components.tagsSource).split()
+  const tagsSourceOutput = verboseOutput ? output.local(alloglot.components.tagsSource).split() : undefined
   const tagsSource = TagsSource.make({ languageId, basedir, tagsUri, output: tagsSourceOutput, initTagsCommand, refreshTagsCommand })
 
   const disposal = Disposal.make()
   disposal.insert(tagsSource)
-  disposal.insert(tagsSourceOutput)
+  tagsSourceOutput && disposal.insert(tagsSourceOutput)
 
   if (completionsProvider) {
     output.appendLine(alloglot.ui.registeringCompletionsProvider)
@@ -68,10 +68,11 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
 
   if (importsProvider) {
     output.appendLine(alloglot.ui.registeringImportsProvider)
+    const importsProviderOutput = verboseOutput ? output.local(alloglot.components.importsProvider).split() : undefined
     const { matchFromFilepath, importLinePattern, renderModuleName } = importsProvider
 
     function applyStringTransformation(cmd: StringTransformation, xs: Array<string>): Array<string> {
-      output.appendLine(`Applying ${JSON.stringify(cmd)} to ${JSON.stringify(xs)}`)
+      importsProviderOutput?.appendLine(`Applying ${JSON.stringify(cmd)} to ${JSON.stringify(xs)}`)
       switch (cmd.tag) {
         case "replace":
           return xs.map(x => x.replace(new RegExp(cmd.from, 'g'), cmd.to))
@@ -89,58 +90,58 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
     }
 
     function applyStringTransformations(cmds: Array<StringTransformation>, x: string): string {
-      output.appendLine(alloglot.ui.applyingTransformations(cmds, x))
+      importsProviderOutput?.appendLine(alloglot.ui.applyingTransformations(cmds, x))
       let buffer = [x]
       cmds.forEach(cmd => buffer = applyStringTransformation(cmd, buffer))
       const result = buffer.join()
-      output.appendLine(alloglot.ui.transformationResult(result))
+      importsProviderOutput?.appendLine(alloglot.ui.transformationResult(result))
       return result
     }
 
     function renderImportLine(tag: TagsSource.Tag): { renderedImport?: string, renderedModuleName?: string } {
-      output.appendLine(alloglot.ui.renderingImportLine(tag))
+      importsProviderOutput?.appendLine(alloglot.ui.renderingImportLine(tag))
 
       const fileMatcher = new RegExp(matchFromFilepath)
-      output.appendLine(alloglot.ui.usingFileMatcher(fileMatcher))
+      importsProviderOutput?.appendLine(alloglot.ui.usingFileMatcher(fileMatcher))
 
       const match = tag.file.match(fileMatcher)
-      output.appendLine(alloglot.ui.fileMatcherResult(match))
+      importsProviderOutput?.appendLine(alloglot.ui.fileMatcherResult(match))
 
       const symbol = tag.symbol
 
       const renderedModuleName = match && match.length > 0
         ? applyStringTransformations(renderModuleName, match[0])
         : undefined
-      output.appendLine(alloglot.ui.renderedModuleName(renderedModuleName))
+      importsProviderOutput?.appendLine(alloglot.ui.renderedModuleName(renderedModuleName))
 
       const renderedImport = renderedModuleName
         ? importLinePattern.replace('${module}', renderedModuleName).replace('${symbol}', symbol) + '\n'
         : undefined
-      output.appendLine(alloglot.ui.renderedImportLine(renderedImport))
+      importsProviderOutput?.appendLine(alloglot.ui.renderedImportLine(renderedImport))
 
       return { renderedImport, renderedModuleName }
     }
 
     function findImportPosition(document: vscode.TextDocument): vscode.Position {
-      output.appendLine(alloglot.ui.findingImportPosition)
+      importsProviderOutput?.appendLine(alloglot.ui.findingImportPosition)
       const importMatcher = new RegExp(importLinePattern.replace('${module}', '(.*)').replace('${symbol}', '(.*)'))
       const fullText = document.getText().split('\n')
       const firstImportLine = fullText.findIndex(line => line.match(importMatcher))
       if (firstImportLine >= 0) {
-        output.appendLine(alloglot.ui.foundImportPosition(firstImportLine))
+        importsProviderOutput?.appendLine(alloglot.ui.foundImportPosition(firstImportLine))
         return new vscode.Position(firstImportLine, 0)
       }
       const firstBlankLine = fullText.findIndex(line => line.match(/^\s*$/))
       if (firstBlankLine >= 0) {
-        output.appendLine(alloglot.ui.foundBlankLine(firstBlankLine))
+        importsProviderOutput?.appendLine(alloglot.ui.foundBlankLine(firstBlankLine))
         return new vscode.Position(firstBlankLine, 0)
       }
-      output.appendLine(alloglot.ui.noBlankLineFound)
+      importsProviderOutput?.appendLine(alloglot.ui.noBlankLineFound)
       return new vscode.Position(0, 0)
     }
 
     function makeImportSuggestion(document: vscode.TextDocument, tag: TagsSource.Tag): ImportSuggestion | undefined {
-      output.appendLine(alloglot.ui.makingImportSuggestion(tag))
+      importsProviderOutput?.appendLine(alloglot.ui.makingImportSuggestion(tag))
       const { renderedImport, renderedModuleName } = renderImportLine(tag)
       if (!renderedImport || !renderedModuleName) return undefined
       const position = findImportPosition(document)
@@ -156,7 +157,7 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
     }
 
     function runSuggestImports(editor: vscode.TextEditor): void {
-      output.appendLine(alloglot.ui.runningSuggestImports)
+      importsProviderOutput?.appendLine(alloglot.ui.runningSuggestImports)
       const { document, selection } = editor
       const wordRange = document.getWordRangeAtPosition(selection.start)
       if (!wordRange) return undefined
@@ -165,9 +166,9 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
         return Array.from(uniqueModules.values())
       })
       vscode.window.showQuickPick<ImportSuggestion>(suggestions).then(pick => {
-        output.appendLine(`Picked: ${JSON.stringify(pick)}`)
+        importsProviderOutput?.appendLine(alloglot.ui.pickedSuggestion(pick))
         pick?.edit && vscode.workspace.applyEdit(pick.edit).then(success => {
-          output.appendLine(alloglot.ui.appliedEdit(success))
+          importsProviderOutput?.appendLine(alloglot.ui.appliedEdit(success))
         })
       })
     }
@@ -175,7 +176,7 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
     disposal.insert(vscode.commands.registerTextEditorCommand(alloglot.commands.suggestImports, runSuggestImports))
     disposal.insert(vscode.languages.registerCodeActionsProvider(languageId, {
       provideCodeActions(document, range) {
-        output.appendLine(alloglot.ui.providingCodeActions)
+        importsProviderOutput?.appendLine(alloglot.ui.providingCodeActions)
         return getImportSuggestions(document, range).then(xs => xs.map(x => {
           const action = new vscode.CodeAction(x.label, vscode.CodeActionKind.QuickFix)
           action.edit = x.edit
@@ -211,14 +212,14 @@ namespace TagsSource {
     languageId: string,
     basedir: vscode.Uri,
     tagsUri: vscode.Uri,
-    output: vscode.OutputChannel,
+    output?: vscode.OutputChannel,
     initTagsCommand?: string,
     refreshTagsCommand?: string
   }
 
   export function make(config: Config): ITagsSource {
     const { languageId, basedir, tagsUri, output, initTagsCommand, refreshTagsCommand } = config
-    output.appendLine(alloglot.ui.creatingTagsSource(tagsUri.fsPath))
+    output?.appendLine(alloglot.ui.creatingTagsSource(tagsUri.fsPath))
 
     const disposal = Disposal.make()
 
@@ -244,7 +245,7 @@ namespace TagsSource {
       findPrefix(prefix, limit = 100) {
         if (!prefix) return Promise.resolve([])
         const escaped = prefix.replace(/(["\s'$`\\])/g, '\\$1')
-        const proc = grep(config, output, new RegExp(`^${escaped}`), limit)
+        const proc = grep(config, new RegExp(`^${escaped}`), limit, output)
         disposal.insert(proc)
         return proc
       },
@@ -252,7 +253,7 @@ namespace TagsSource {
       findExact(exact, limit = 100) {
         if (!exact) return Promise.resolve([])
         const escaped = exact.replace(/(["\s'$`\\])/g, '\\$1')
-        const proc = grep(config, output, new RegExp(`^${escaped}\\t`), limit)
+        const proc = grep(config, new RegExp(`^${escaped}\\t`), limit, output)
         disposal.insert(proc)
         return proc
       },
@@ -264,21 +265,21 @@ namespace TagsSource {
     }
   }
 
-  function grep(config: Config, output: vscode.OutputChannel, regexp: RegExp, limit: number): IAsyncProcess<Array<Tag>> {
+  function grep(config: Config, regexp: RegExp, limit: number, output?: vscode.OutputChannel): IAsyncProcess<Array<Tag>> {
     const { tagsUri, basedir } = config
     const command = `grep -P '${regexp.source}' ${tagsUri.fsPath} | head -n ${limit}`
 
-    output.appendLine(`Searching for ${regexp} in ${tagsUri.fsPath}...`)
-    return AsyncProcess.make({ output, command, basedir }, stdout => filterMap(stdout.split('\n'), line => parseTag(output, line)))
+    output?.appendLine(`Searching for ${regexp} in ${tagsUri.fsPath}...`)
+    return AsyncProcess.make({ output, command, basedir }, stdout => filterMap(stdout.split('\n'), line => parseTag(line, output)))
   }
 
-  function parseTag(output: vscode.OutputChannel, line: string): Tag | undefined {
-    output.appendLine(alloglot.ui.parsingTagLine(line))
+  function parseTag(line: string, output?: vscode.OutputChannel): Tag | undefined {
+    output?.appendLine(alloglot.ui.parsingTagLine(line))
     const [symbol, file, rawLineNumber] = line.split('\t')
     let lineNumber = parseInt(rawLineNumber)
     if (!symbol || !file || !lineNumber) return undefined
     const tag = { symbol, file, lineNumber }
-    output.appendLine(alloglot.ui.parsedTagLine(tag))
+    output?.appendLine(alloglot.ui.parsedTagLine(tag))
     return tag
   }
 

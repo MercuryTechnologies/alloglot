@@ -13,6 +13,7 @@ export namespace Disposal {
    */
   export function make(): IDisposal {
     const disposables: Array<vscode.Disposable> = []
+
     return {
       insert(disposable) {
         disposables.push(disposable)
@@ -29,10 +30,10 @@ export interface IAsyncProcess<T> extends vscode.Disposable, Promise<T> { }
 
 export namespace AsyncProcess {
   type Spec = {
-    output: vscode.OutputChannel
     command: string
     basedir?: vscode.Uri
     stdin?: string
+    output?: vscode.OutputChannel
   }
 
   /**
@@ -50,34 +51,35 @@ export namespace AsyncProcess {
     // giving this an `any` signature allows us to add a `dispose` method.
     // it's a little bit jank, but i don't know how else to do it.
     const asyncProc: any = new Promise((resolve, reject) => {
-      output.appendLine(`Running '${command}' in '${cwd}'...`)
+      output?.appendLine(alloglot.ui.runningCommand(command, cwd))
 
       const proc = exec(command, { cwd, signal }, (error, stdout, stderr) => {
         if (error) {
-          output.appendLine(alloglot.ui.errorRunningCommand(command, error))
+          output?.appendLine(alloglot.ui.errorRunningCommand(command, error))
           reject(error)
         }
 
-        stderr && output.appendLine(alloglot.ui.commandLogs(command, stderr))
-        !stdout && output.appendLine(alloglot.ui.commandNoOutput(command))
+        stderr && output?.appendLine(alloglot.ui.commandLogs(command, stderr))
+        !stdout && output?.appendLine(alloglot.ui.commandNoOutput(command))
 
         resolve(f(stdout))
       })
 
-      proc.stdout?.on('data', chunk => output.append(stripAnsi(chunk)))
+      proc.stdout?.on('data', chunk => output?.append(stripAnsi(chunk)))
       stdin && proc.stdin?.write(stdin)
       proc.stdin?.end()
-      output.appendLine(alloglot.ui.ranCommand(command))
     })
 
     asyncProc.dispose = () => {
       if (controller) {
-        output.appendLine(alloglot.ui.killingCommand(command))
+        output?.appendLine(alloglot.ui.killingCommand(command))
         controller.abort()
         controller = undefined // ensure `dispose()` is idempotent
-        output.appendLine(alloglot.ui.commandKilled(command))
+        output?.appendLine(alloglot.ui.commandKilled(command))
       }
     }
+
+    asyncProc.then(() => output?.appendLine(alloglot.ui.ranCommand(command)))
 
     return asyncProc as IAsyncProcess<T>
   }
