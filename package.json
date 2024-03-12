@@ -93,10 +93,14 @@
                 "type": "object",
                 "default": null,
                 "required": [
-                  "file"
+                  "file",
+                  "grepPath"
                 ],
                 "properties": {
                   "file": {
+                    "type": "string"
+                  },
+                  "grepPath": {
                     "type": "string"
                   },
                   "initTagsCommand": {

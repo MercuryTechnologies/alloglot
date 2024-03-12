@@ -7,10 +7,10 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
   const { languageId, tags } = config
   if (!languageId || !tags) return vscode.Disposable.from()
 
-  const { completionsProvider, definitionsProvider, importsProvider, initTagsCommand, refreshTagsCommand } = tags
+  const { file, grepPath, completionsProvider, definitionsProvider, importsProvider, initTagsCommand, refreshTagsCommand } = tags
 
   const basedir: vscode.Uri | undefined = vscode.workspace.workspaceFolders?.[0].uri
-  const tagsUri: vscode.Uri | undefined = basedir && vscode.Uri.joinPath(basedir, tags.file)
+  const tagsUri: vscode.Uri | undefined = basedir && vscode.Uri.joinPath(basedir, file)
 
   if (!basedir || !tagsUri) return vscode.Disposable.from()
 
@@ -18,7 +18,7 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
 
   output.appendLine(alloglot.ui.startingTags)
   const tagsSourceOutput = verboseOutput ? output.local(alloglot.components.tagsSource).split() : undefined
-  const tagsSource = TagsSource.make({ languageId, basedir, tagsUri, output: tagsSourceOutput, initTagsCommand, refreshTagsCommand })
+  const tagsSource = TagsSource.make({ languageId, grepPath, basedir, tagsUri, output: tagsSourceOutput, initTagsCommand, refreshTagsCommand })
 
   const disposal = Disposal.make()
   disposal.insert(tagsSource)
@@ -72,9 +72,9 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
     const { matchFromFilepath, importLinePattern, renderModuleName } = importsProvider
 
     function applyStringTransformation(cmd: StringTransformation, xs: Array<string>): Array<string> {
-      importsProviderOutput?.appendLine(`Applying ${JSON.stringify(cmd)} to ${JSON.stringify(xs)}`)
+      importsProviderOutput?.appendLine(alloglot.ui.applyingTransformation(cmd, xs))
       switch (cmd.tag) {
-        case "replace":
+        case 'replace':
           return xs.map(x => x.replace(new RegExp(cmd.from, 'g'), cmd.to))
         case 'split':
           return xs.flatMap(x => x.split(cmd.on))
@@ -212,6 +212,7 @@ namespace TagsSource {
     languageId: string,
     basedir: vscode.Uri,
     tagsUri: vscode.Uri,
+    grepPath: string,
     output?: vscode.OutputChannel,
     initTagsCommand?: string,
     refreshTagsCommand?: string
@@ -266,8 +267,8 @@ namespace TagsSource {
   }
 
   function grep(config: Config, regexp: RegExp, limit: number, output?: vscode.OutputChannel): IAsyncProcess<Array<Tag>> {
-    const { tagsUri, basedir } = config
-    const command = `grep -P '${regexp.source}' ${tagsUri.fsPath} | head -n ${limit}`
+    const { tagsUri, basedir, grepPath } = config
+    const command = `${grepPath} -P '${regexp.source}' ${tagsUri.fsPath} | head -n ${limit}`
 
     output?.appendLine(`Searching for ${regexp} in ${tagsUri.fsPath}...`)
     return AsyncProcess.make({ output, command, basedir }, stdout => filterMap(stdout.split('\n'), line => parseTag(line, output)))

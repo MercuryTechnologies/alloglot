@@ -74,6 +74,11 @@ export type TagsConfig = {
   file: string
 
   /**
+   * Path to GNU Grep. (BSD Grep is not supported.)
+   */
+  grepPath: string
+
+  /**
    * A command to generate the tags file.
    */
   initTagsCommand?: string
@@ -227,7 +232,6 @@ export namespace Config {
     return {
       activateCommand: config.activateCommand?.trim(),
       deactivateCommand: config.deactivateCommand?.trim(),
-      verboseOutput: !!config.verboseOutput,
       languages: config.languages?.filter(lang => {
         // make sure no fields are whitespace-only
         // we mutate the original object because typescript doesn't have a `filterMap` function
@@ -244,6 +248,7 @@ export namespace Config {
 
         if (lang.tags) {
           lang.tags.file = lang.tags.file.trim()
+          lang.tags.grepPath = lang.tags.grepPath.trim()
           lang.tags.initTagsCommand = lang.tags.initTagsCommand?.trim()
           lang.tags.refreshTagsCommand = lang.tags.refreshTagsCommand?.trim()
           if (!lang.tags?.importsProvider?.importLinePattern.trim()) lang.tags.importsProvider = undefined
@@ -265,7 +270,8 @@ export namespace alloglot {
     export const addImport = (moduleName: string) => `Add import: ${moduleName}`
     export const annotationsStarted = 'Annotations started.'
     export const appliedEdit = (success: boolean) => `Applied edit: ${success}`
-    export const applyingTransformations = (t: any, x: string) => `Applying ${JSON.stringify(t)} to ${x}`
+    export const applyingTransformation = (t: any, xs: Array<string>) => `Applying single transformation ${JSON.stringify(t)} to split string array ${xs}`
+    export const applyingTransformations = (t: any, x: string) => `Applying transformations ${JSON.stringify(t)} to string ${x}`
     export const commandKilled = (cmd: string) => `Killed “${cmd}”.`
     export const commandLogs = (cmd: string, logs: string) => `Logs from “${cmd}”:\n\t${logs}`
     export const commandNoOutput = (cmd: string) => `Received no output from “${cmd}”.`
