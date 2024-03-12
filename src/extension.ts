@@ -13,6 +13,11 @@ let globalContext: vscode.ExtensionContext | undefined
 let globalConfig: TConfig | undefined
 
 export function activate(context: vscode.ExtensionContext): void {
+  if (globalOutput) {
+    globalOutput.dispose()
+    globalOutput = undefined
+  }
+
   globalContext = context
   const output = HierarchicalOutputChannel.make(alloglot.root)
   globalOutput = output
@@ -25,33 +30,38 @@ export function activate(context: vscode.ExtensionContext): void {
   const langs = config.languages || []
 
   const verboseOutput = !!config.verboseOutput
+  const grepPath = config.grepPath || 'grep'
 
   context.subscriptions.push(
-    // Start the activation command if it's configured.
-    makeActivationCommand(output.local(alloglot.components.activateCommand), config.activateCommand),
-    // Make a single API search command because VSCode can't dynamically create commands.
-    makeApiSearch(output.local(alloglot.components.apiSearch), config),
-    ...langs.map(lang => makeAnnotations(output.local(`${alloglot.components.annotations}-${lang.languageId}`), lang)),
-    ...langs.map(lang => makeFormatter(output.local(`${alloglot.components.formatter}-${lang.languageId}`), lang, verboseOutput)),
-    ...langs.map(lang => makeClient(output.local(`${alloglot.components.client}-${lang.languageId}`), lang)),
-    ...langs.map(lang => makeTags(output.local(`${alloglot.components.tags}-${lang.languageId}`), lang, verboseOutput)),
-    // Restart the extension when the configuration changes.
-    vscode.workspace.onDidChangeConfiguration(ev => ev.affectsConfiguration(alloglot.config.root) && restart()),
     // Restart the extension when the user runs the restart command.
-    vscode.commands.registerCommand(alloglot.commands.restart, () => restart())
+    vscode.commands.registerCommand(alloglot.commands.restart, () => restart(output, context)),
+
+    // Restart the extension when the configuration changes.
+    vscode.workspace.onDidChangeConfiguration(ev => ev.affectsConfiguration(alloglot.config.root) && restart(output, context)),
+
+    // Start the activation component if it's configured.
+    makeActivationCommand(output.local(alloglot.components.activateCommand), config.activateCommand),
+
+    // Start the API search component because VSCode can't dynamically create commands.
+    makeApiSearch(output.local(alloglot.components.apiSearch), config),
+
+    // Start all the language-specific components.
+    ...langs.map(lang => makeAnnotations(output.local(alloglot.components.annotations).local(lang.languageId), lang)),
+    ...langs.map(lang => makeFormatter(output.local(alloglot.components.formatter).local(lang.languageId), lang, verboseOutput)),
+    ...langs.map(lang => makeClient(output.local(alloglot.components.client).local(lang.languageId), lang)),
+    ...langs.map(lang => makeTags(output.local(alloglot.components.tags).local(lang.languageId), grepPath, lang, verboseOutput))
   )
 }
 
 export function deactivate(): void {
   const command = globalConfig?.deactivateCommand
+  globalConfig = undefined
   const basedir = vscode.workspace.workspaceFolders?.[0].uri
 
   function cleanup(): void {
     globalOutput?.appendLine(alloglot.ui.deactivatingAlloglot)
     globalContext && globalContext.subscriptions.forEach(sub => sub.dispose())
-    globalOutput?.dispose()
-    globalOutput = undefined
-    globalConfig = undefined
+    globalContext = undefined
   }
 
   if (command) {
@@ -60,13 +70,11 @@ export function deactivate(): void {
     proc.then(() => {
       globalOutput?.appendLine(alloglot.ui.deactivateCommandDone(command))
       cleanup()
-      proc.dispose()
     })
 
     proc.catch(err => {
       globalOutput?.appendLine(alloglot.ui.deactivateCommandFailed(err))
       cleanup()
-      proc.dispose()
     })
 
   } else {
@@ -74,10 +82,10 @@ export function deactivate(): void {
   }
 }
 
-function restart(): void {
-  globalOutput && globalOutput.appendLine(alloglot.ui.restartingAlloglot)
+function restart(output: vscode.OutputChannel, context: vscode.ExtensionContext): void {
+  output.appendLine(alloglot.ui.restartingAlloglot)
   deactivate()
-  globalContext && activate(globalContext)
+  activate(context)
 }
 
 function makeActivationCommand(parentOutput: IHierarchicalOutputChannel, command: string | undefined): vscode.Disposable {

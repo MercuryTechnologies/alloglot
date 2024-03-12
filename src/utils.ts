@@ -72,10 +72,14 @@ export namespace AsyncProcess {
 
     asyncProc.dispose = () => {
       if (controller) {
-        output?.appendLine(alloglot.ui.killingCommand(command))
-        controller.abort()
-        controller = undefined // ensure `dispose()` is idempotent
-        output?.appendLine(alloglot.ui.commandKilled(command))
+        try {
+          output?.appendLine(alloglot.ui.killingCommand(command))
+          controller.abort()
+          controller = undefined // ensure `dispose()` is idempotent
+          output?.appendLine(alloglot.ui.commandKilled(command))
+        } catch (err) {
+          output?.appendLine(alloglot.ui.errorKillingCommand(command, err))
+        }
       }
     }
 

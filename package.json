@@ -51,23 +51,27 @@
       "properties": {
         "alloglot.activateCommand": {
           "type": "string",
-          "description": "A shell command to run on activation. The command will run asynchronously. It will be killed (if it's still running) on deactivation.",
-          "default": null
+          "description": "A shell command to run on activation. The command will run asynchronously. It will be killed (if it's still running) on deactivation."
         },
         "alloglot.deactivateCommand": {
           "type": "string",
-          "description": "A shell command to run on deactivation.",
-          "default": null
+          "description": "A shell command to run on deactivation."
         },
         "alloglot.verboseOutput": {
           "type": "boolean",
-          "description": "If `true`, Alloglot will log more output.",
-          "default": null
+          "description": "If `true`, Alloglot will log more output."
+        },
+        "alloglot.mergeConfigs": {
+          "type": "boolean",
+          "description": "If `true`, Alloglot will merge `.vscode/alloglot.json` into its config."
+        },
+        "alloglot.grepPath": {
+          "type": "string",
+          "description": "Path to GNU Grep. Parsing tags files depends on GNU Grep. (BSD Grep is not supported.)"
         },
         "alloglot.languages": {
           "type": "array",
           "description": "An array of language configurations. See README.md for schema.",
-          "default": null,
           "items": {
             "type": "object",
             "required": [
@@ -78,79 +82,74 @@
                 "type": "string"
               },
               "serverCommand": {
-                "type": "string",
-                "default": null
+                "type": "string"
               },
               "formatCommand": {
-                "type": "string",
-                "default": null
+                "type": "string"
               },
               "apiSearchUrl": {
-                "type": "string",
-                "default": null
+                "type": "string"
               },
               "tags": {
-                "type": "object",
-                "default": null,
-                "required": [
-                  "file",
-                  "grepPath"
-                ],
-                "properties": {
-                  "file": {
-                    "type": "string"
-                  },
-                  "grepPath": {
-                    "type": "string"
-                  },
-                  "initTagsCommand": {
-                    "type": "string"
-                  },
-                  "refreshTagsCommand": {
-                    "type": "string"
-                  },
-                  "completionsProvider": {
-                    "type": "boolean"
-                  },
-                  "definitionsProvider": {
-                    "type": "boolean"
-                  },
-                  "importsProvider": {
-                    "type": "object",
-                    "required": [
-                      "importLinePattern",
-                      "matchFromFilepath",
-                      "renderModuleName"
-                    ],
-                    "properties": {
-                      "importLinePattern": {
-                        "type": "string"
-                      },
-                      "matchFromFilepath": {
-                        "type": "string"
-                      },
-                      "renderModuleName": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "required": [
-                            "tag"
-                          ],
-                          "properties": {
-                            "tag": {
-                              "type": "string"
-                            },
-                            "from": {
-                              "type": "string"
-                            },
-                            "to": {
-                              "type": "string"
-                            },
-                            "on": {
-                              "type": "string"
-                            },
-                            "with": {
-                              "type": "string"
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "file"
+                  ],
+                  "properties": {
+                    "file": {
+                      "type": "string"
+                    },
+                    "initTagsCommand": {
+                      "type": "string"
+                    },
+                    "refreshTagsCommand": {
+                      "type": "string"
+                    },
+                    "completionsProvider": {
+                      "type": "boolean"
+                    },
+                    "definitionsProvider": {
+                      "type": "boolean"
+                    },
+                    "importsProvider": {
+                      "type": "object",
+                      "required": [
+                        "importLinePattern",
+                        "matchFromFilepath",
+                        "renderModuleName"
+                      ],
+                      "properties": {
+                        "importLinePattern": {
+                          "type": "string"
+                        },
+                        "matchFromFilepath": {
+                          "type": "string"
+                        },
+                        "renderModuleName": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "tag"
+                            ],
+                            "properties": {
+                              "tag": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "string"
+                              },
+                              "on": {
+                                "type": "string"
+                              },
+                              "with": {
+                                "type": "string"
+                              }
                             }
                           }
                         }
@@ -159,9 +158,8 @@
                   }
                 }
               },
-              "annotationsFiles": {
+              "annotations": {
                 "type": "array",
-                "default": null,
                 "items": {
                   "type": "object",
                   "required": [
@@ -192,64 +190,55 @@
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         },
                         "startLine": {
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         },
                         "startColumn": {
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         },
                         "endLine": {
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         },
                         "endColumn": {
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         },
                         "source": {
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         },
                         "severity": {
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         },
                         "replacements": {
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         },
                         "referenceCode": {
                           "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "default": null
+                          }
                         }
                       }
                     }

@@ -31,6 +31,11 @@ export type TConfig = {
    * If `true`, Alloglot will merge `.vscode/alloglot.json` into its config.
    */
   mergeConfigs?: boolean
+
+  /**
+   * Path to GNU Grep. Parsing tags files depends on GNU Grep. (BSD Grep is not supported.)
+   */
+  grepPath?: string
 }
 
 /**
@@ -77,11 +82,6 @@ export type TagsConfig = {
    * The relative path to the tags file.
    */
   file: string
-
-  /**
-   * Path to GNU Grep. (BSD Grep is not supported.)
-   */
-  grepPath?: string
 
   /**
    * A command to generate the tags file.
@@ -199,7 +199,9 @@ export type AnnotationsMapping = {
 export namespace Config {
   export function make(output: vscode.OutputChannel): TConfig {
     const workspace = readWorkspace(output)
+    output.appendLine(`workspace: ${JSON.stringify(workspace, null, 2)}`)
     const fallback = readFallback(output)
+    output.appendLine(`fallback: ${JSON.stringify(fallback, null, 2)}`)
 
     if (workspace?.mergeConfigs && fallback) {
       output.appendLine(alloglot.ui.mergingConfigs)
@@ -234,8 +236,9 @@ export namespace Config {
       const deactivateCommand = workspaceSettings.get<string>(alloglot.config.deactivateCommand)
       const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
       const verboseOutput = workspaceSettings.get<boolean>(alloglot.config.verboseOutput)
+      output.appendLine(`verboseOutput: ${verboseOutput}`)
       const mergeConfigs = workspaceSettings.get<boolean>(alloglot.config.mergeConfigs)
-      const settingsExist = !!(activateCommand || languages || deactivateCommand || verboseOutput || mergeConfigs)
+      const settingsExist = !!activateCommand || !!languages || !!deactivateCommand || !!verboseOutput || !!mergeConfigs
       output.appendLine(alloglot.ui.workspaceConfigExists(settingsExist))
       if (settingsExist) return { activateCommand, deactivateCommand, languages, verboseOutput, mergeConfigs }
       return undefined
@@ -249,36 +252,37 @@ export namespace Config {
 
   function sanitize(output: vscode.OutputChannel, config: TConfig): TConfig {
     try {
-      return {
-        activateCommand: config.activateCommand?.trim(),
-        deactivateCommand: config.deactivateCommand?.trim(),
-        languages: config.languages?.filter(lang => {
-          // make sure no fields are whitespace-only
-          // we mutate the original object because typescript doesn't have a `filterMap` function
+      config.activateCommand = config.activateCommand?.trim()
+      config.deactivateCommand = config.deactivateCommand?.trim()
+      config.grepPath = config.grepPath?.trim()
+      config.languages = config.languages?.filter(lang => {
 
-          lang.languageId = lang.languageId.trim()
-          lang.serverCommand = lang.serverCommand?.trim()
-          lang.formatCommand = lang.formatCommand?.trim()
-          lang.apiSearchUrl = lang.apiSearchUrl?.trim()
+        lang.languageId = lang.languageId.trim()
+        lang.serverCommand = lang.serverCommand?.trim()
+        lang.formatCommand = lang.formatCommand?.trim()
+        lang.apiSearchUrl = lang.apiSearchUrl?.trim()
 
-          lang.annotations = lang.annotations?.filter(ann => {
-            ann.file = ann.file.trim()
-            return ann.file
-          })
-
-          lang.tags = lang.tags?.filter(tag => {
-            tag.file = tag.file.trim()
-            tag.grepPath = tag.grepPath?.trim()
-            tag.initTagsCommand = tag.initTagsCommand?.trim()
-            tag.refreshTagsCommand = tag.refreshTagsCommand?.trim()
-            if (!tag?.importsProvider?.importLinePattern.trim()) tag.importsProvider = undefined
-            if (!tag?.importsProvider?.matchFromFilepath.trim()) tag.importsProvider = undefined
-            return tag.file && tag.grepPath
-          })
-
-          return lang.languageId
+        lang.annotations = lang.annotations?.filter(ann => {
+          ann.file = ann.file.trim()
+          return ann.file
         })
-      }
+        if (lang.annotations) lang.annotations = arrayUniqueBy(ann => ann.file, lang.annotations)
+
+        lang.tags = lang.tags?.filter(tag => {
+          tag.file = tag.file.trim()
+          tag.initTagsCommand = tag.initTagsCommand?.trim()
+          tag.refreshTagsCommand = tag.refreshTagsCommand?.trim()
+          if (!tag?.importsProvider?.importLinePattern.trim()) tag.importsProvider = undefined
+          if (!tag?.importsProvider?.matchFromFilepath.trim()) tag.importsProvider = undefined
+          return tag.file
+        })
+        if (lang.tags) lang.tags = arrayUniqueBy(tag => tag.file, lang.tags)
+
+        return lang.languageId
+      })
+      if (config.languages) config.languages = arrayUniqueBy(lang => lang.languageId, config.languages)
+
+      return config
     } catch (err) {
       output.appendLine(alloglot.ui.couldNotSanitizeConfig(err))
       return empty
@@ -309,13 +313,16 @@ export namespace Config {
   function tagMerge(mask: TagsConfig, base: TagsConfig): TagsConfig {
     return {
       file: mask.file,
-      grepPath: mask.grepPath,
+      completionsProvider: mask.completionsProvider !== undefined ? mask.completionsProvider : base.completionsProvider,
+      definitionsProvider: mask.definitionsProvider !== undefined ? mask.definitionsProvider : base.definitionsProvider,
+      importsProvider: mask.importsProvider || base.importsProvider,
       initTagsCommand: mask.initTagsCommand || base.initTagsCommand,
-      refreshTagsCommand: mask.refreshTagsCommand || base.refreshTagsCommand,
-      completionsProvider: mask.completionsProvider || base.completionsProvider,
-      definitionsProvider: mask.definitionsProvider || base.definitionsProvider,
-      importsProvider: mask.importsProvider || base.importsProvider
+      refreshTagsCommand: mask.refreshTagsCommand || base.refreshTagsCommand
     }
+  }
+
+  function arrayUniqueBy<K, V>(key: (val: V) => K, xs: Array<V>): Array<V> {
+    return arrayMerge<K, V>(xs, [], key, (l, r) => l)
   }
 
   function arrayMerge<K, V>(left: Array<V>, right: Array<V>, key: (val: V) => K, merge: (l: V, r: V) => V): Array<V> {
@@ -354,6 +361,7 @@ export namespace alloglot {
     export const deactivateCommandDone = (cmd: string) => `Deactivation command has completed: ${cmd}`
     export const deactivateCommandFailed = (err: any) => `Deactivation command has completed: ${err}`
     export const disposingAlloglot = 'Disposing Alloglot...'
+    export const errorKillingCommand = (cmd: string, err: any) => `Error killing “${cmd}”:\n\t${err}`
     export const errorRunningCommand = (cmd: string, err: any) => `Error running “${cmd}”:\n\t${err}`
     export const fileMatcherResult = (result: any) => `Match: ${result}`
     export const findingImportPosition = 'Finding import position...'
@@ -431,6 +439,6 @@ export namespace alloglot {
     export const activateCommand = 'activateCommand' as const
     export const deactivateCommand = 'deactivateCommand' as const
     export const verboseOutput = 'verboseOutput' as const
-    export const mergeConfigs = 'merge' as const
+    export const mergeConfigs = 'mergeConfigs' as const
   }
 }
