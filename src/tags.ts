@@ -1,13 +1,16 @@
 import * as vscode from 'vscode'
 
-import { LanguageConfig, StringTransformation, alloglot } from './config'
+import { LanguageConfig, StringTransformation, TagsConfig, alloglot } from './config'
 import { AsyncProcess, Disposal, IAsyncProcess, IHierarchicalOutputChannel } from './utils'
 
 export function makeTags(output: IHierarchicalOutputChannel, config: LanguageConfig, verboseOutput: boolean): vscode.Disposable {
   const { languageId, tags } = config
-  if (!languageId || !tags) return vscode.Disposable.from()
+  if (!languageId || !tags || tags.length === 0) return vscode.Disposable.from()
+  return vscode.Disposable.from(...tags.map(tag => makeTag(output, languageId, tag, verboseOutput)))
+}
 
-  const { file, grepPath, completionsProvider, definitionsProvider, importsProvider, initTagsCommand, refreshTagsCommand } = tags
+function makeTag(output: IHierarchicalOutputChannel, languageId: string, cfg: TagsConfig, verboseOutput: boolean): vscode.Disposable {
+  const { file, grepPath, completionsProvider, definitionsProvider, importsProvider, initTagsCommand, refreshTagsCommand } = cfg
 
   const basedir: vscode.Uri | undefined = vscode.workspace.workspaceFolders?.[0].uri
   const tagsUri: vscode.Uri | undefined = basedir && vscode.Uri.joinPath(basedir, file)
@@ -18,7 +21,7 @@ export function makeTags(output: IHierarchicalOutputChannel, config: LanguageCon
 
   output.appendLine(alloglot.ui.startingTags)
   const tagsSourceOutput = verboseOutput ? output.local(alloglot.components.tagsSource).split() : undefined
-  const tagsSource = TagsSource.make({ languageId, grepPath, basedir, tagsUri, output: tagsSourceOutput, initTagsCommand, refreshTagsCommand })
+  const tagsSource = TagsSource.make({ languageId, grepPath: grepPath || 'grep', basedir, tagsUri, output: tagsSourceOutput, initTagsCommand, refreshTagsCommand })
 
   const disposal = Disposal.make()
   disposal.insert(tagsSource)

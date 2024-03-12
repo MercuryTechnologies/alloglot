@@ -26,6 +26,11 @@ export type TConfig = {
    * If `true`, Alloglot will log more output.
    */
   verboseOutput?: boolean
+
+  /**
+   * If `true`, Alloglot will merge `.vscode/alloglot.json` into its config.
+   */
+  mergeConfigs?: boolean
 }
 
 /**
@@ -57,9 +62,9 @@ export type LanguageConfig = {
   apiSearchUrl?: string
 
   /**
-   * Configuration for using a tags file to suggest completions, definitions, or imports.
+   * A list of tags files to use to find definitions, suggest completions, or suggest imports.
    */
-  tags?: TagsConfig
+  tags?: Array<TagsConfig>
 
   /**
    * A list of files to watch for compiler-generated JSON output.
@@ -76,7 +81,7 @@ export type TagsConfig = {
   /**
    * Path to GNU Grep. (BSD Grep is not supported.)
    */
-  grepPath: string
+  grepPath?: string
 
   /**
    * A command to generate the tags file.
@@ -193,72 +198,137 @@ export type AnnotationsMapping = {
 
 export namespace Config {
   export function make(output: vscode.OutputChannel): TConfig {
-    const empty: TConfig = {}
+    const workspace = readWorkspace(output)
+    const fallback = readFallback(output)
 
-    function readFallback(): TConfig | undefined {
+    if (workspace?.mergeConfigs && fallback) {
+      output.appendLine(alloglot.ui.mergingConfigs)
+      return merge(sanitize(output, workspace), sanitize(output, fallback))
+    } else {
+      return sanitize(output, workspace || fallback || empty)
+    }
+  }
+
+  function readFallback(output: vscode.OutputChannel): TConfig | undefined {
+    try {
       const workspaceFolders = vscode.workspace.workspaceFolders?.map(folder => folder.uri)
-      try {
-        if (workspaceFolders && workspaceFolders.length > 0) {
-          const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
-          output.appendLine(alloglot.ui.readingFallbackConfig(fullPath.path))
-          return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
-        } else {
-          output.appendLine(alloglot.ui.noWorkspaceFolders)
-          return undefined
-        }
-      } catch (err) {
-        output.appendLine(alloglot.ui.couldNotReadFallback(err))
+      if (workspaceFolders && workspaceFolders.length > 0) {
+        const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
+        output.appendLine(alloglot.ui.readingFallbackConfig(fullPath.path))
+        return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
+      } else {
+        output.appendLine(alloglot.ui.noWorkspaceFolders)
         return undefined
       }
+    } catch (err) {
+      output.appendLine(alloglot.ui.couldNotReadFallback(err))
+      return undefined
     }
+  }
 
-    function readSettings(): TConfig | undefined {
+  function readWorkspace(output: vscode.OutputChannel): TConfig | undefined {
+    try {
       output.appendLine(alloglot.ui.readingWorkspaceSettings)
       const workspaceSettings = vscode.workspace.getConfiguration(alloglot.config.root)
       const activateCommand = workspaceSettings.get<string>(alloglot.config.activateCommand)
       const deactivateCommand = workspaceSettings.get<string>(alloglot.config.deactivateCommand)
       const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
       const verboseOutput = workspaceSettings.get<boolean>(alloglot.config.verboseOutput)
-      const settingsExist = !!(activateCommand || languages || deactivateCommand || verboseOutput)
+      const mergeConfigs = workspaceSettings.get<boolean>(alloglot.config.mergeConfigs)
+      const settingsExist = !!(activateCommand || languages || deactivateCommand || verboseOutput || mergeConfigs)
       output.appendLine(alloglot.ui.workspaceConfigExists(settingsExist))
-      if (settingsExist) return { activateCommand, deactivateCommand, languages, verboseOutput }
+      if (settingsExist) return { activateCommand, deactivateCommand, languages, verboseOutput, mergeConfigs }
+      return undefined
+    } catch (err) {
+      output.appendLine(alloglot.ui.couldNotReadWorkspace(err))
       return undefined
     }
-
-    return sanitizeConfig(readSettings() || readFallback() || empty)
   }
 
-  function sanitizeConfig(config: TConfig): TConfig {
-    return {
-      activateCommand: config.activateCommand?.trim(),
-      deactivateCommand: config.deactivateCommand?.trim(),
-      languages: config.languages?.filter(lang => {
-        // make sure no fields are whitespace-only
-        // we mutate the original object because typescript doesn't have a `filterMap` function
+  const empty: TConfig = {}
 
-        lang.languageId = lang.languageId.trim()
-        lang.serverCommand = lang.serverCommand?.trim()
-        lang.formatCommand = lang.formatCommand?.trim()
-        lang.apiSearchUrl = lang.apiSearchUrl?.trim()
+  function sanitize(output: vscode.OutputChannel, config: TConfig): TConfig {
+    try {
+      return {
+        activateCommand: config.activateCommand?.trim(),
+        deactivateCommand: config.deactivateCommand?.trim(),
+        languages: config.languages?.filter(lang => {
+          // make sure no fields are whitespace-only
+          // we mutate the original object because typescript doesn't have a `filterMap` function
 
-        lang.annotations = lang.annotations?.filter(ann => {
-          ann.file = ann.file.trim()
-          return ann.file
+          lang.languageId = lang.languageId.trim()
+          lang.serverCommand = lang.serverCommand?.trim()
+          lang.formatCommand = lang.formatCommand?.trim()
+          lang.apiSearchUrl = lang.apiSearchUrl?.trim()
+
+          lang.annotations = lang.annotations?.filter(ann => {
+            ann.file = ann.file.trim()
+            return ann.file
+          })
+
+          lang.tags = lang.tags?.filter(tag => {
+            tag.file = tag.file.trim()
+            tag.grepPath = tag.grepPath?.trim()
+            tag.initTagsCommand = tag.initTagsCommand?.trim()
+            tag.refreshTagsCommand = tag.refreshTagsCommand?.trim()
+            if (!tag?.importsProvider?.importLinePattern.trim()) tag.importsProvider = undefined
+            if (!tag?.importsProvider?.matchFromFilepath.trim()) tag.importsProvider = undefined
+            return tag.file && tag.grepPath
+          })
+
+          return lang.languageId
         })
-
-        if (lang.tags) {
-          lang.tags.file = lang.tags.file.trim()
-          lang.tags.grepPath = lang.tags.grepPath.trim()
-          lang.tags.initTagsCommand = lang.tags.initTagsCommand?.trim()
-          lang.tags.refreshTagsCommand = lang.tags.refreshTagsCommand?.trim()
-          if (!lang.tags?.importsProvider?.importLinePattern.trim()) lang.tags.importsProvider = undefined
-          if (!lang.tags?.importsProvider?.matchFromFilepath.trim()) lang.tags.importsProvider = undefined
-          if (!lang.tags.file) lang.tags = undefined
-        }
-
-        return lang.languageId
-      })
+      }
+    } catch (err) {
+      output.appendLine(alloglot.ui.couldNotSanitizeConfig(err))
+      return empty
     }
+  }
+
+  function merge(mask: TConfig, base: TConfig): TConfig {
+    return {
+      activateCommand: mask.activateCommand || base.activateCommand,
+      deactivateCommand: mask.deactivateCommand || base.deactivateCommand,
+      languages: arrayMerge(mask.languages || [], base.languages || [], lang => lang.languageId, languageMerge),
+      verboseOutput: mask.verboseOutput || base.verboseOutput,
+      mergeConfigs: mask.mergeConfigs || base.mergeConfigs
+    }
+  }
+
+  function languageMerge(mask: LanguageConfig, base: LanguageConfig): LanguageConfig {
+    return {
+      languageId: mask.languageId,
+      serverCommand: mask.serverCommand || base.serverCommand,
+      formatCommand: mask.formatCommand || base.formatCommand,
+      apiSearchUrl: mask.apiSearchUrl || base.apiSearchUrl,
+      tags: arrayMerge(mask.tags || [], base.tags || [], tag => tag.file, tagMerge),
+      annotations: arrayMerge(mask.annotations || [], base.annotations || [], ann => ann.file, (mask, base) => mask)
+    }
+  }
+
+  function tagMerge(mask: TagsConfig, base: TagsConfig): TagsConfig {
+    return {
+      file: mask.file,
+      grepPath: mask.grepPath,
+      initTagsCommand: mask.initTagsCommand || base.initTagsCommand,
+      refreshTagsCommand: mask.refreshTagsCommand || base.refreshTagsCommand,
+      completionsProvider: mask.completionsProvider || base.completionsProvider,
+      definitionsProvider: mask.definitionsProvider || base.definitionsProvider,
+      importsProvider: mask.importsProvider || base.importsProvider
+    }
+  }
+
+  function arrayMerge<K, V>(left: Array<V>, right: Array<V>, key: (val: V) => K, merge: (l: V, r: V) => V): Array<V> {
+    const leftMap = new Map(left.map(x => [key(x), x]))
+    const rightMap = new Map(right.map(x => [key(x), x]))
+    return Array.from(mapMerge(leftMap, rightMap, merge).values())
+  }
+
+  function mapMerge<K, V>(left: Map<K, V>, right: Map<K, V>, merge: (l: V, r: V) => V): Map<K, V> {
+    const result = new Map<K, V>()
+    for (const [k, v] of left) result.set(k, v)
+    for (const [k, v] of right) result.set(k, result.has(k) ? merge(result.get(k)!, v) : v)
+    return result
   }
 }
 
@@ -276,6 +346,8 @@ export namespace alloglot {
     export const commandLogs = (cmd: string, logs: string) => `Logs from “${cmd}”:\n\t${logs}`
     export const commandNoOutput = (cmd: string) => `Received no output from “${cmd}”.`
     export const couldNotReadFallback = (err: any) => `Could not read fallback configuration: ${err}`
+    export const couldNotReadWorkspace = (err: any) => `Could not read workspace configuration: ${err}`
+    export const couldNotSanitizeConfig = (err: any) => `Configuration is malformed: ${err}`
     export const creatingApiSearch = (langIds: Array<string>) => `Creating API search command for languages: ${langIds}`
     export const creatingTagsSource = (path: string) => `Creating tags source for path: ${path}`
     export const deactivatingAlloglot = `Deactivating Alloglot...`
@@ -292,6 +364,7 @@ export namespace alloglot {
     export const languageClientStarted = 'Language client started.'
     export const languageClientStopped = 'Language client stopped.'
     export const makingImportSuggestion = (tag: any) => `Making import suggestion for tag: ${JSON.stringify(tag)}`
+    export const mergingConfigs = 'Merging workspace configuration with “.vscode/alloglot.json”...'
     export const noBlankLineFound = 'No blank line found. Inserting import at start of file.'
     export const noWorkspaceFolders = 'No workspace folders found. Cannot read fallback configuration.'
     export const parsedTagLine = (tag: any) => `Parsed tag: ${JSON.stringify(tag)}`
@@ -358,5 +431,6 @@ export namespace alloglot {
     export const activateCommand = 'activateCommand' as const
     export const deactivateCommand = 'deactivateCommand' as const
     export const verboseOutput = 'verboseOutput' as const
+    export const mergeConfigs = 'merge' as const
   }
 }
