@@ -5,21 +5,17 @@ import { makeApiSearch } from './apisearch'
 import { makeClient } from './client'
 import { Config, TConfig, alloglot } from './config'
 import { makeFormatter } from './formatter'
+import { makeOnSaveRunner } from './onsaverunner'
 import { makeTags } from './tags'
 import { AsyncProcess, HierarchicalOutputChannel, IHierarchicalOutputChannel } from './utils'
 
-let globalOutput: vscode.OutputChannel | undefined
+let globalOutput: IHierarchicalOutputChannel | undefined
 let globalContext: vscode.ExtensionContext | undefined
 let globalConfig: TConfig | undefined
 
 export function activate(context: vscode.ExtensionContext): void {
-  if (globalOutput) {
-    globalOutput.dispose()
-    globalOutput = undefined
-  }
-
   globalContext = context
-  const output = HierarchicalOutputChannel.make(alloglot.root)
+  const output = globalOutput || HierarchicalOutputChannel.make(alloglot.root)
   globalOutput = output
 
   output.appendLine(alloglot.ui.startingAlloglot)
@@ -46,6 +42,7 @@ export function activate(context: vscode.ExtensionContext): void {
     makeApiSearch(output.local(alloglot.components.apiSearch), config),
 
     // Start all the language-specific components.
+    ...langs.map(lang => makeOnSaveRunner(output.local(alloglot.components.onSaveRunner).local(lang.languageId), lang)),
     ...langs.map(lang => makeAnnotations(output.local(alloglot.components.annotations).local(lang.languageId), lang)),
     ...langs.map(lang => makeFormatter(output.local(alloglot.components.formatter).local(lang.languageId), lang, verboseOutput)),
     ...langs.map(lang => makeClient(output.local(alloglot.components.client).local(lang.languageId), lang)),

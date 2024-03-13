@@ -206,16 +206,25 @@ export type LanguageConfig = {
   languageId: string
 
   /**
-   * A command to start the language server.
+   * A shell command to start the language server.
    */
   serverCommand?: string
 
   /**
-   * A formatter command.
-   * Reads from STDIN and writes to STDOUT.
-   * `${file}` will be replaced with the relative path to the file.
+   * A formatter shell command.
+   * STDIN will be equal to the contents of the current text document,
+   * not the file contents as it exists on disk.
+   * STDOUT will replace the entire contents of the current text document.
+   * Alloglot will not modify the file on disk (though your command might!).
+   * `${file}` will be replaced with the full path to the file.
    */
   formatCommand?: string
+
+  /**
+   * A shell command to run after a file is saved.
+   * `${file}` will be replaced with the full path to the file.
+   */
+  onSaveCommand?: string
 
   /**
    * URL to documentation/API search.
@@ -247,7 +256,7 @@ export type TagsConfig = {
 
   /**
    * A command to refresh the tags file when a file is saved.
-   * `${file}` will be replaced with the relative path to the file.
+   * `${file}` will be replaced with the full path to the file.
    */
   refreshTagsCommand?: string
 

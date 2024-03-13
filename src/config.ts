@@ -49,16 +49,25 @@ export type LanguageConfig = {
   languageId: string
 
   /**
-   * A command to start the language server.
+   * A shell command to start the language server.
    */
   serverCommand?: string
 
   /**
-   * A formatter command.
-   * Reads from STDIN and writes to STDOUT.
-   * `${file}` will be replaced with the relative path to the file.
+   * A formatter shell command.
+   * STDIN will be equal to the contents of the current text document,
+   * not the file contents as it exists on disk.
+   * STDOUT will replace the entire contents of the current text document.
+   * Alloglot will not modify the file on disk (though your command might!).
+   * `${file}` will be replaced with the full path to the file.
    */
   formatCommand?: string
+
+  /**
+   * A shell command to run after a file is saved.
+   * `${file}` will be replaced with the full path to the file.
+   */
+  onSaveCommand?: string
 
   /**
    * URL to documentation/API search.
@@ -90,7 +99,7 @@ export type TagsConfig = {
 
   /**
    * A command to refresh the tags file when a file is saved.
-   * `${file}` will be replaced with the relative path to the file.
+   * `${file}` will be replaced with the full path to the file.
    */
   refreshTagsCommand?: string
 
@@ -235,7 +244,7 @@ export namespace Config {
       const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
       const verboseOutput = workspaceSettings.get<boolean>(alloglot.config.verboseOutput)
       const mergeConfigs = workspaceSettings.get<boolean>(alloglot.config.mergeConfigs)
-      const grepPath = workspaceSettings.get<string>('grepPath')
+      const grepPath = workspaceSettings.get<string>(alloglot.config.grepPath)
       const settingsExist = !!activateCommand || !!languages || !!deactivateCommand || !!verboseOutput || !!mergeConfigs || !!grepPath
       output.appendLine(alloglot.ui.workspaceConfigExists(settingsExist))
       if (settingsExist) return { activateCommand, deactivateCommand, languages, verboseOutput, mergeConfigs, grepPath }
@@ -258,6 +267,7 @@ export namespace Config {
         lang.languageId = lang.languageId.trim()
         lang.serverCommand = lang.serverCommand?.trim()
         lang.formatCommand = lang.formatCommand?.trim()
+        lang.onSaveCommand = lang.onSaveCommand?.trim()
         lang.apiSearchUrl = lang.apiSearchUrl?.trim()
 
         lang.annotations = lang.annotations?.filter(ann => {
@@ -385,9 +395,11 @@ export namespace alloglot {
     export const registeredCompletionsProvider = 'Registered completions provider.'
     export const registeredDefinitionsProvider = 'Registered definitions provider.'
     export const registeredImportsProvider = 'Registered imports provider.'
+    export const registeredOnSaveCommand = 'Registered on-save command.'
     export const registeringCompletionsProvider = 'Registering completions provider...'
     export const registeringDefinitionsProvider = 'Registering definitions provider...'
     export const registeringImportsProvider = 'Registering imports provider...'
+    export const registeringOnSaveCommand = 'Registering on-save command...'
     export const renderedImportLine = (line?: string) => `Rendered import line: ${line}`
     export const renderedModuleName = (name?: string) => `Rendered module name: ${name}`
     export const renderingImportLine = (tag: any) => `Rendering import line for tag: ${JSON.stringify(tag)}`
@@ -420,6 +432,7 @@ export namespace alloglot {
     export const annotations = 'annotations' as const
     export const formatter = 'formatter' as const
     export const client = 'client' as const
+    export const onSaveRunner = 'onsaverunner' as const
     export const tags = 'tags' as const
     export const tagsSource = 'tagssource' as const
     export const importsProvider = 'importsprovider' as const
@@ -435,8 +448,10 @@ export namespace alloglot {
   export namespace config {
     export const root = alloglot.root
     export const fallbackPath = `.vscode/${root}.json` as const
+    export const grepPath = 'grepPath' as const
     export const languages = 'languages' as const
     export const activateCommand = 'activateCommand' as const
+    export const onSaveCommand = 'onSaveCommand' as const
     export const deactivateCommand = 'deactivateCommand' as const
     export const verboseOutput = 'verboseOutput' as const
     export const mergeConfigs = 'mergeConfigs' as const
