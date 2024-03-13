@@ -9,6 +9,7 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [3.0.4]
 
 - Fix crashing `Alloglot: Restart` command.
+
 ## [3.0.3]
 
 - fix bug in config booleans.
