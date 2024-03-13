@@ -4,6 +4,7 @@ Language agnostic IDE for VS Code.
 
 ## Features
 
+- Supports zero-configuration for end users.
 - Full-feature generic LSP client.
 - Allows the user to specify files to poll for diagnostics information.
   - Supports arbitrary JSON formats via user-specified mapping.
@@ -137,10 +138,20 @@ Most of the properties are optional, so you can make use of only the features th
 }
 ```
 
+### Zero-conf
+
+Alloglot supports "zero-configuration" in the following sense.
 If there is no user-level or workspace-level configuration present,
 Alloglot will read configuration from a file `.vscode/alloglot.json` if one exists.
 The format for this file is to drop the `alloglot.`-prefix on top-level keys,
 but otherwise is the same.
+This file can be checked into a project's git repository without causing issue,
+since it is ignored if a user has user-level or workspace-level configuration.
+An experienced contributor can create a `.vscode/alloglot.json` file and check it into the repository.
+This can greatly reduce the effort new contributors expend to onboard to a project,
+especially for large projects that use multiple programming languages, bespoke tooling, or complex build processes.
+
+### Schema
 
 The configuration schema is defined by the following typescript.
 Configuration is highly flexible, with most fields being optional.
