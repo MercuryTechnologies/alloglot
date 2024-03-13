@@ -6,6 +6,12 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+## [3.0.1]
+
+- Fix bug in setting config `grepPath`.
+
+## [3.0.0]
+
 - Support configurable path to `grep`.
 - Support multiple tags configs. `alloglot.tags` must now be an array of `TagsConfig`.
 - Support merging workspace config with fallback config.
