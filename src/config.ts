@@ -355,7 +355,8 @@ export namespace alloglot {
     export const couldNotSanitizeConfig = (err: any) => `Configuration is malformed: ${err}`
     export const creatingApiSearch = (langIds: Array<string>) => `Creating API search command for languages: ${langIds}`
     export const creatingTagsSource = (path: string) => `Creating tags source for path: ${path}`
-    export const deactivatingAlloglot = `Deactivating Alloglot...`
+    export const deactivatedAlloglot = 'Deactivated Alloglot.'
+    export const deactivatingAlloglot = 'Deactivating Alloglot...'
     export const deactivateCommandDone = (cmd: string) => `Deactivation command has completed: ${cmd}`
     export const deactivateCommandFailed = (err: any) => `Deactivation command has completed: ${err}`
     export const disposingAlloglot = 'Disposing Alloglot...'
@@ -380,6 +381,7 @@ export namespace alloglot {
     export const ranCommand = (cmd: string) => `Ran “${cmd}”.`
     export const readingFallbackConfig = (path: string) => `Reading fallback configuration from path: ${path}`
     export const readingWorkspaceSettings = 'Reading configuration from workspace settings'
+    export const readyToRestart = 'Ready to restart Alloglot.'
     export const registeredCompletionsProvider = 'Registered completions provider.'
     export const registeredDefinitionsProvider = 'Registered definitions provider.'
     export const registeredImportsProvider = 'Registered imports provider.'
