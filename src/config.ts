@@ -228,7 +228,6 @@ export namespace Config {
 
   function readWorkspace(output: vscode.OutputChannel): TConfig | undefined {
     try {
-      output.appendLine(alloglot.ui.readingWorkspaceSettings)
       const workspaceSettings = vscode.workspace.getConfiguration(alloglot.config.root)
       const activateCommand = workspaceSettings.get<string>(alloglot.config.activateCommand)
       const deactivateCommand = workspaceSettings.get<string>(alloglot.config.deactivateCommand)

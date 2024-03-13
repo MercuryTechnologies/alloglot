@@ -6,6 +6,9 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+- Update README.md for version 3.
+- Fix bug that prevented using fallback config.
+
 ## [3.0.1]
 
 - Fix bug in setting config `grepPath`.

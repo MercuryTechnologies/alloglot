@@ -26,36 +26,83 @@ Most of the properties are optional, so you can make use of only the features th
     {
       "languageId": "cabal",
       "formatCommand": "cabal-fmt --stdout",
-      "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}"
+      "apiSearchUrl": "https://hackage.haskell.org/packages/search?terms=${query}"
     },
     {
       "languageId": "haskell",
       "serverCommand": "static-ls",
       "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
       "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
-      "tags": {
-        "file": ".tags",
-        "initTagsCommand": "ghc-tags -c",
-        "refreshTagsCommand": "ghc-tags -c",
-        "completionsProvider": true,
-        "definitionsProvider": true,
-        "importsProvider": {
-          "importLinePattern": "import ${module} (${symbol})",
-          "matchFromFilepath": "([A-Z][A-Za-z0-9_']*)(\\/([A-Z][A-Za-z0-9_']*))*\\.hs",
-          "renderModuleName": [
-            {
-              "tag": "replace",
-              "from": "\\.hs",
-              "to": ""
-            },
-            {
-              "tag": "replace",
-              "from": "\\/",
-              "to": "."
-            }
-          ]
+      "tags": [
+        {
+          "file": ".tags",
+          "initTagsCommand": "ghc-tags -c",
+          "refreshTagsCommand": "ghc-tags -c",
+          "completionsProvider": true,
+          "definitionsProvider": true,
+          "importsProvider": {
+            "importLinePattern": "import ${module} (${symbol})",
+            "matchFromFilepath": "([A-Z][A-Za-z0-9_']*)(\\/([A-Z][A-Za-z0-9_']*))*\\.hs",
+            "renderModuleName": [
+              {
+                "tag": "replace",
+                "from": "\\.hs",
+                "to": ""
+              },
+              {
+                "tag": "replace",
+                "from": "\\/",
+                "to": "."
+              }
+            ]
+          }
+        },
+        {
+          "file": "package-deps-index.tsv",
+          "completionsProvider": true,
+          "importsProvider": {
+            "importLinePattern": "import ${module}",
+            "matchFromFilepath": "(.*)",
+            "renderModuleName": [
+              {
+                "tag": "replace",
+                "from": "(Data\\.ByteString.*)",
+                "to": "$1 qualified as BS"
+              },
+              {
+                "tag": "replace",
+                "from": "(Data\\.Text.*)",
+                "to": "$1 qualified as T"
+              },
+              {
+                "tag": "replace",
+                "from": "(Data\\.ByteString.*Lazy.*) qualified as BS",
+                "to": "$1 qualified as BSL"
+              },
+              {
+                "tag": "replace",
+                "from": "(Data\\.Text.*Lazy.*) qualified as T",
+                "to": "$1 qualified as TL"
+              },
+              {
+                "tag": "replace",
+                "from": "(Data\\.Map.*)",
+                "to": "$1 qualified as M"
+              },
+              {
+                "tag": "replace",
+                "from": "(Data\\.Set.*)",
+                "to": "$1 qualified as S"
+              },
+              {
+                "tag": "replace",
+                "from": "(Data\\.Vector.*)",
+                "to": "$1 qualified as V"
+              }
+            ]
+          }
         }
-      },
+      ],
       "annotations": [
         {
           "file": "ghc-out.json",
@@ -125,6 +172,16 @@ export type TConfig = {
    * If `true`, Alloglot will log more output.
    */
   verboseOutput?: boolean
+
+  /**
+   * If `true`, Alloglot will merge `.vscode/alloglot.json` into its config.
+   */
+  mergeConfigs?: boolean
+
+  /**
+   * Path to GNU Grep. Parsing tags files depends on GNU Grep. (BSD Grep is not supported.)
+   */
+  grepPath?: string
 }
 
 /**
@@ -156,9 +213,9 @@ export type LanguageConfig = {
   apiSearchUrl?: string
 
   /**
-   * Configuration for using a tags file to suggest completions, definitions, or imports.
+   * A list of tags files to use to find definitions, suggest completions, or suggest imports.
    */
-  tags?: TagsConfig
+  tags?: Array<TagsConfig>
 
   /**
    * A list of files to watch for compiler-generated JSON output.
