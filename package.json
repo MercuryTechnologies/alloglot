@@ -93,6 +93,9 @@
               "formatCommand": {
                 "type": "string"
               },
+              "onSaveCommand": {
+                "type": "string"
+              },
               "apiSearchUrl": {
                 "type": "string"
               },
