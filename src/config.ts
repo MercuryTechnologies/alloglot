@@ -311,8 +311,8 @@ export namespace Config {
   function tagMerge(mask: TagsConfig, base: TagsConfig): TagsConfig {
     return {
       file: mask.file,
-      completionsProvider: mask.completionsProvider !== undefined ? mask.completionsProvider : base.completionsProvider,
-      definitionsProvider: mask.definitionsProvider !== undefined ? mask.definitionsProvider : base.definitionsProvider,
+      completionsProvider: typeof mask.completionsProvider === 'boolean' ? mask.completionsProvider : base.completionsProvider,
+      definitionsProvider: typeof mask.definitionsProvider === 'boolean' ? mask.definitionsProvider : base.definitionsProvider,
       importsProvider: mask.importsProvider || base.importsProvider,
       initTagsCommand: mask.initTagsCommand || base.initTagsCommand,
       refreshTagsCommand: mask.refreshTagsCommand || base.refreshTagsCommand
