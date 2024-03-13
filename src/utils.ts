@@ -53,21 +53,26 @@ export namespace AsyncProcess {
     const asyncProc: any = new Promise((resolve, reject) => {
       output?.appendLine(alloglot.ui.runningCommand(command, cwd))
 
-      const proc = exec(command, { cwd, signal }, (error, stdout, stderr) => {
-        if (error) {
-          output?.appendLine(alloglot.ui.errorRunningCommand(command, error))
-          reject(error)
-        }
+      try {
+        const proc = exec(command, { cwd, signal }, (error, stdout, stderr) => {
+          if (error) {
+            output?.appendLine(alloglot.ui.errorRunningCommand(command, error))
+            reject(error)
+          }
 
-        stderr && output?.appendLine(alloglot.ui.commandLogs(command, stderr))
-        !stdout && output?.appendLine(alloglot.ui.commandNoOutput(command))
+          stderr && output?.appendLine(alloglot.ui.commandLogs(command, stderr))
+          !stdout && output?.appendLine(alloglot.ui.commandNoOutput(command))
 
-        resolve(f(stdout))
-      })
+          resolve(f(stdout))
+        })
 
-      proc.stdout?.on('data', chunk => output?.append(stripAnsi(chunk)))
-      stdin && proc.stdin?.write(stdin)
-      proc.stdin?.end()
+        proc.stdout?.on('data', chunk => output?.append(stripAnsi(chunk)))
+        stdin && proc.stdin?.write(stdin)
+        proc.stdin?.end()
+      } catch (err) {
+        output?.appendLine(alloglot.ui.errorRunningCommand(command, err))
+        reject(err)
+      }
     })
 
     asyncProc.dispose = () => {

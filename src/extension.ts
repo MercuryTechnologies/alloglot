@@ -53,39 +53,46 @@ export function activate(context: vscode.ExtensionContext): void {
   )
 }
 
-export function deactivate(): void {
+export function deactivate(): Promise<void> {
   const command = globalConfig?.deactivateCommand
   globalConfig = undefined
   const basedir = vscode.workspace.workspaceFolders?.[0].uri
 
-  function cleanup(): void {
-    globalOutput?.appendLine(alloglot.ui.deactivatingAlloglot)
-    globalContext && globalContext.subscriptions.forEach(sub => sub.dispose())
-    globalContext = undefined
+  function cleanup(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        globalOutput?.appendLine(alloglot.ui.deactivatingAlloglot)
+        globalContext && globalContext.subscriptions.forEach(sub => sub.dispose())
+        globalContext = undefined
+        globalOutput?.appendLine(alloglot.ui.deactivatedAlloglot)
+        resolve()
+      } catch (err) {
+        reject(err)
+      }
+    })
   }
 
   if (command) {
-    const proc = AsyncProcess.make({ output: globalOutput, command, basedir }, () => { })
-
-    proc.then(() => {
-      globalOutput?.appendLine(alloglot.ui.deactivateCommandDone(command))
-      cleanup()
-    })
-
-    proc.catch(err => {
-      globalOutput?.appendLine(alloglot.ui.deactivateCommandFailed(err))
-      cleanup()
-    })
-
+    return AsyncProcess.make({ output: globalOutput, command, basedir }, () => undefined)
+      .then(() => {
+        globalOutput?.appendLine(alloglot.ui.deactivateCommandDone(command))
+        return cleanup()
+      })
+      .catch(err => {
+        globalOutput?.appendLine(alloglot.ui.deactivateCommandFailed(err))
+        return cleanup()
+      })
   } else {
-    cleanup()
+    return cleanup()
   }
 }
 
 function restart(output: vscode.OutputChannel, context: vscode.ExtensionContext): void {
   output.appendLine(alloglot.ui.restartingAlloglot)
-  deactivate()
-  activate(context)
+  deactivate().then(() => {
+    output.appendLine(alloglot.ui.readyToRestart)
+    activate(context)
+  })
 }
 
 function makeActivationCommand(parentOutput: IHierarchicalOutputChannel, command: string | undefined): vscode.Disposable {
