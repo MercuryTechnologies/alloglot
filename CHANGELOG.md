@@ -6,6 +6,8 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+## [3.1.0]
+
 - Add `onSaveCommand` to `LanguageConfig`. Can now configure a command to run on saved files.
 - Restarting Alloglot no longer disposes of its main output channel.
 
