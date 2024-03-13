@@ -47,7 +47,9 @@ jobs:
           elif [[ "$is_patch" == "true" ]]; then
             npm version patch --no-git-tag-version
           fi
-          echo "new_version=$(jq --raw-output '.version' package.json)" >> "$GITHUB_OUTPUT"
+          new_version=$(jq --raw-output '.version' package.json)
+          sed -i "0,/## \[unreleased\]/{s//## [unreleased]\n\n## [$new_version]/}" CHANGELOG.md
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
 
       - name: Create release PR
         id: release_pr
