@@ -105,7 +105,29 @@ export namespace HierarchicalOutputChannel {
    * Spawned channels will have the same name as the parent channel, so messages appear in the same output window.
    */
   export function make(name: string): IHierarchicalOutputChannel {
+    return addTimestamps(makeNoTimestamps(name))
+  }
+
+  function makeNoTimestamps(name: string): IHierarchicalOutputChannel {
     return promote([], vscode.window.createOutputChannel(name))
+  }
+
+  function addTimestamps(output: IHierarchicalOutputChannel): IHierarchicalOutputChannel {
+    return {
+      ...output,
+
+      append(value: string) {
+        output.append(`[${timestamp()}] ${value}`)
+      },
+
+      appendLine(value: string) {
+        output.appendLine(`[${timestamp()}] ${value}`)
+      }
+    }
+  }
+
+  function timestamp(): string {
+    return new Date().toJSON().split('T')[1].replace(/\.\d*Z/, ' UTC')
   }
 
   function addPrefix(output: vscode.OutputChannel, prefix: string): vscode.OutputChannel {
@@ -135,7 +157,7 @@ export namespace HierarchicalOutputChannel {
       split() {
         const name = [output.name, ...prefixPath].join('-')
         output.appendLine(alloglot.ui.splittingOutputChannel(name))
-        return make(name)
+        return makeNoTimestamps(name)
       }
     }
   }
