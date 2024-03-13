@@ -199,9 +199,7 @@ export type AnnotationsMapping = {
 export namespace Config {
   export function make(output: vscode.OutputChannel): TConfig {
     const workspace = readWorkspace(output)
-    output.appendLine(`workspace: ${JSON.stringify(workspace, null, 2)}`)
     const fallback = readFallback(output)
-    output.appendLine(`fallback: ${JSON.stringify(fallback, null, 2)}`)
 
     if (workspace?.mergeConfigs && fallback) {
       output.appendLine(alloglot.ui.mergingConfigs)
@@ -236,11 +234,11 @@ export namespace Config {
       const deactivateCommand = workspaceSettings.get<string>(alloglot.config.deactivateCommand)
       const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
       const verboseOutput = workspaceSettings.get<boolean>(alloglot.config.verboseOutput)
-      output.appendLine(`verboseOutput: ${verboseOutput}`)
       const mergeConfigs = workspaceSettings.get<boolean>(alloglot.config.mergeConfigs)
-      const settingsExist = !!activateCommand || !!languages || !!deactivateCommand || !!verboseOutput || !!mergeConfigs
+      const grepPath = workspaceSettings.get<string>('grepPath')
+      const settingsExist = !!activateCommand || !!languages || !!deactivateCommand || !!verboseOutput || !!mergeConfigs || !!grepPath
       output.appendLine(alloglot.ui.workspaceConfigExists(settingsExist))
-      if (settingsExist) return { activateCommand, deactivateCommand, languages, verboseOutput, mergeConfigs }
+      if (settingsExist) return { activateCommand, deactivateCommand, languages, verboseOutput, mergeConfigs, grepPath }
       return undefined
     } catch (err) {
       output.appendLine(alloglot.ui.couldNotReadWorkspace(err))
