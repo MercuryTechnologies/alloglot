@@ -8,6 +8,7 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Update README.md for version 3.
 - Fix bug that prevented using fallback config.
+- Add timestamps to output.
 
 ## [3.0.1]
 
