@@ -13,5 +13,11 @@ export function makeActivationCommand(parentOutput: IHierarchicalOutputChannel, 
     parentOutput.appendLine(alloglot.ui.activateCommandDone(command))
   })
 
+  proc.catch(err => {
+    vscode.window
+      .showErrorMessage<'Ignore' | 'Restart'>(alloglot.ui.activateCommandFailed(err), 'Ignore', 'Restart')
+      .then(choice => choice === 'Restart' && vscode.commands.executeCommand(alloglot.commands.restart))
+  })
+
   return vscode.Disposable.from(proc, output)
 }

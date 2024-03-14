@@ -359,6 +359,7 @@ export namespace alloglot {
 
   export namespace ui {
     export const activateCommandDone = (cmd: string) => `Activation command “${cmd}” has completed.`
+    export const activateCommandFailed = (err: any) => `Activation command has failed: ${err}\n\nIgnore the failure or restart Alloglot?`
     export const addImport = (moduleName: string) => `Add import: ${moduleName}`
     export const annotationsStarted = 'Annotations started.'
     export const appliedEdit = (success: boolean) => `Applied edit: ${success}`
