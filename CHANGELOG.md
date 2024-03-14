@@ -6,6 +6,8 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+## [3.2.0]
+
 - autoreveal activate command output channel.
 - and some bugfixes in config booleans (evergreen problem).
 
