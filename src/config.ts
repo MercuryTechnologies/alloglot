@@ -13,6 +13,11 @@ export type TConfig = {
   activateCommand?: string
 
   /**
+   * If `true`, Alloglot will automatically reveal the activation command's output channel.
+   */
+  revealActivateCommandOutput?: boolean
+
+  /**
    * A shell command to run on deactivation.
    */
   deactivateCommand?: string
@@ -240,14 +245,15 @@ export namespace Config {
       output.appendLine(alloglot.ui.readingWorkspaceSettings)
       const workspaceSettings = vscode.workspace.getConfiguration(alloglot.config.root)
       const activateCommand = workspaceSettings.get<string>(alloglot.config.activateCommand)
+      const revealActivateCommandOutput = workspaceSettings.get<boolean>(alloglot.config.revealActivateCommandOutput)
       const deactivateCommand = workspaceSettings.get<string>(alloglot.config.deactivateCommand)
       const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
       const verboseOutput = workspaceSettings.get<boolean>(alloglot.config.verboseOutput)
       const mergeConfigs = workspaceSettings.get<boolean>(alloglot.config.mergeConfigs)
       const grepPath = workspaceSettings.get<string>(alloglot.config.grepPath)
-      const settingsExist = !!activateCommand || !!languages || !!deactivateCommand || !!verboseOutput || !!mergeConfigs || !!grepPath
+      const settingsExist = !!activateCommand || !!revealActivateCommandOutput || !!languages || !!deactivateCommand || !!verboseOutput || !!mergeConfigs || !!grepPath
       output.appendLine(alloglot.ui.workspaceConfigExists(settingsExist))
-      if (settingsExist) return { activateCommand, deactivateCommand, languages, verboseOutput, mergeConfigs, grepPath }
+      if (settingsExist) return { activateCommand, revealActivateCommandOutput, deactivateCommand, languages, verboseOutput, mergeConfigs, grepPath }
       return undefined
     } catch (err) {
       output.appendLine(alloglot.ui.couldNotReadWorkspace(err))
@@ -302,8 +308,9 @@ export namespace Config {
       activateCommand: mask.activateCommand || base.activateCommand,
       deactivateCommand: mask.deactivateCommand || base.deactivateCommand,
       languages: arrayMerge(mask.languages || [], base.languages || [], lang => lang.languageId, languageMerge),
-      verboseOutput: mask.verboseOutput || base.verboseOutput,
-      mergeConfigs: mask.mergeConfigs || base.mergeConfigs
+      revealActivateCommandOutput: typeof mask.revealActivateCommandOutput === 'boolean' ? mask.revealActivateCommandOutput : base.revealActivateCommandOutput,
+      verboseOutput: typeof mask.verboseOutput === 'boolean' ? mask.verboseOutput : base.verboseOutput,
+      mergeConfigs: typeof mask.mergeConfigs === 'boolean' ? mask.mergeConfigs : base.mergeConfigs
     }
   }
 
@@ -451,6 +458,7 @@ export namespace alloglot {
     export const grepPath = 'grepPath' as const
     export const languages = 'languages' as const
     export const activateCommand = 'activateCommand' as const
+    export const revealActivateCommandOutput = 'revealActivateCommandOutput' as const
     export const onSaveCommand = 'onSaveCommand' as const
     export const deactivateCommand = 'deactivateCommand' as const
     export const verboseOutput = 'verboseOutput' as const
