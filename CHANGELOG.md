@@ -6,6 +6,9 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+- autoreveal activate command output channel.
+- and some bugfixes in config booleans (evergreen problem).
+
 ## [3.1.0]
 
 - Add `onSaveCommand` to `LanguageConfig`. Can now configure a command to run on saved files.

@@ -54,6 +54,11 @@
           "description": "A shell command to run on activation. The command will run asynchronously. It will be killed (if it's still running) on deactivation.",
           "default": null
         },
+        "alloglot.revealActivateCommandOutput": {
+          "type": "boolean",
+          "description": "If `true`, Alloglot will automatically reveal the activation command's output channel.",
+          "default": null
+        },
         "alloglot.deactivateCommand": {
           "type": "string",
           "description": "A shell command to run on deactivation.",

@@ -21,7 +21,8 @@ Most of the properties are optional, so you can make use of only the features th
 
 ```json
 {
-  "alloglot.activateCommand": "ghcid",
+  "alloglot.activateCommand": "ghcid --command=\"cabal repl --ghc-options=-ddump-json\" --output=\"ghc-out.json\"",
+  "alloglot.revealActivateCommandOutput": true,
   "alloglot.deactivateCommand": "pgrep ghc | xargs kill",
   "alloglot.languages": [
     {
@@ -33,6 +34,7 @@ Most of the properties are optional, so you can make use of only the features th
       "languageId": "haskell",
       "serverCommand": "static-ls",
       "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
+      "onSaveCommand": ".bin/hlint --json --no-exit-code ${file} > hlint-out.json",
       "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
       "tags": [
         {
@@ -168,6 +170,11 @@ export type TConfig = {
    * It will be killed (if it's still running) on deactivation.
    */
   activateCommand?: string
+
+  /**
+   * If `true`, Alloglot will automatically reveal the activation command's output channel.
+   */
+  revealActivateCommandOutput?: boolean
 
   /**
    * A shell command to run on deactivation.
@@ -330,7 +337,7 @@ export type AnnotationsConfig = {
 }
 
 /**
- * Intermediate representation of compiler-generated JSON output and VS Code diagnostics.
+ * Intermediate representation between compiler JSON output and VS Code diagnostics.
  */
 export type Annotation = {
   source: string
@@ -346,7 +353,7 @@ export type Annotation = {
 }
 
 /**
- * Mapping between arbitrary JSON object and properties of `Annotation`.
+ * Mapping between arbitrary JSON objects and properties of `Annotation`.
  * Each property is an array of strings that will be used as a path into the JSON object.
  */
 export type AnnotationsMapping = {

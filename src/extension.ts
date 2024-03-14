@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 
+import { makeActivationCommand } from './activationcommand'
 import { makeAnnotations } from './annotations'
 import { makeApiSearch } from './apisearch'
 import { makeClient } from './client'
@@ -36,7 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeConfiguration(ev => ev.affectsConfiguration(alloglot.config.root) && restart(output, context)),
 
     // Start the activation component if it's configured.
-    makeActivationCommand(output.local(alloglot.components.activateCommand), config.activateCommand),
+    makeActivationCommand(output.local(alloglot.components.activateCommand), config.activateCommand, config.revealActivateCommandOutput),
 
     // Start the API search component because VSCode can't dynamically create commands.
     makeApiSearch(output.local(alloglot.components.apiSearch), config),
@@ -90,16 +91,4 @@ function restart(output: vscode.OutputChannel, context: vscode.ExtensionContext)
     output.appendLine(alloglot.ui.readyToRestart)
     activate(context)
   })
-}
-
-function makeActivationCommand(parentOutput: IHierarchicalOutputChannel, command: string | undefined): vscode.Disposable {
-  if (!command) return vscode.Disposable.from()
-  const basedir = vscode.workspace.workspaceFolders?.[0].uri
-  const output = parentOutput.split()
-
-  const proc = AsyncProcess.make({ output, command, basedir }, () => {
-    parentOutput.appendLine(alloglot.ui.activateCommandDone(command))
-  })
-
-  return vscode.Disposable.from(proc, output)
 }
