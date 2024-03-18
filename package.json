@@ -2,7 +2,7 @@
   "name": "alloglot",
   "displayName": "Alloglot",
   "description": "Language agnostic IDE for VS Code",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "publisher": "friedbrice",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
