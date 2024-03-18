@@ -9,7 +9,9 @@ export function makeActivationCommand(parentOutput: IHierarchicalOutputChannel, 
   const output = parentOutput.split()
   reveal && output.show(true)
 
-  const proc = AsyncProcess.make({ output, command, basedir }, () => {
+  const proc = AsyncProcess.spawn({ output, command, basedir })
+
+  proc.then(() => () => {
     parentOutput.appendLine(alloglot.ui.activateCommandDone(command))
   })
 

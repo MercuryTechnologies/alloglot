@@ -1,4 +1,4 @@
-import { exec } from 'child_process'
+import * as child_process from 'child_process'
 import * as vscode from 'vscode'
 
 import { alloglot } from './config'
@@ -37,11 +37,33 @@ export namespace AsyncProcess {
   }
 
   /**
-   * Create an {@link IAsyncProcess async process} that runs a command and returns a promise of the result.
-   * `make(spec, f)` computes the result by running the `f` on the process stdout.
+   * Create a (potentially) long-lived {@link IAsyncProcess async process}.
+   * `spawn(spec)` runs a command and returns a promise that resolves when the process exits.
    * Method `dispose()` kills the process and is idempotent.
    */
-  export function make<T>(spec: Spec, f: (stdout: string) => T): IAsyncProcess<T> {
+  export function spawn(spec: Spec): IAsyncProcess<void> {
+    return make<void>(spec, (cmd, opts, resolve) => {
+      const proc = child_process.spawn(cmd, [], {...opts, shell: true})
+      proc.on('exit', resolve)
+      return proc
+    })
+  }
+
+  /**
+   * Create a short-lived {@link IAsyncProcess async process} that runs a command and returns a promise of the result.
+   * `exec(spec, f)` computes the result by running the `f` on the process stdout.
+   * Method `dispose()` kills the process and is idempotent.
+   */
+  export function exec<T>(spec: Spec, f: (stdout: string) => T): IAsyncProcess<T> {
+    return make(spec, (cmd, opts, resolve) => {
+      return child_process.exec(cmd, opts, (error, stdout, stderr) => {
+        !stdout && spec.output?.appendLine(alloglot.ui.commandNoOutput(spec.command))
+        resolve(f(stdout))
+      })
+    })
+  }
+
+  function make<T>(spec: Spec, makeProc: (command: string, opts: {cwd?: string, signal?: AbortSignal}, resolve: (t: T) => void) => child_process.ChildProcess): IAsyncProcess<T> {
     let controller: AbortController | undefined = new AbortController()
     const { signal } = controller
 
@@ -50,23 +72,20 @@ export namespace AsyncProcess {
 
     // giving this an `any` signature allows us to add a `dispose` method.
     // it's a little bit jank, but i don't know how else to do it.
-    const asyncProc: any = new Promise((resolve, reject) => {
+    const asyncProc: any = new Promise<T>((resolve, reject) => {
       output?.appendLine(alloglot.ui.runningCommand(command, cwd))
 
       try {
-        const proc = exec(command, { cwd, signal }, (error, stdout, stderr) => {
-          if (error) {
-            output?.appendLine(alloglot.ui.errorRunningCommand(command, error))
-            reject(error)
-          }
+        const proc = makeProc(command, { cwd, signal }, resolve)
 
-          stderr && output?.appendLine(alloglot.ui.commandLogs(command, stderr))
-          !stdout && output?.appendLine(alloglot.ui.commandNoOutput(command))
-
-          resolve(f(stdout))
+        proc.on('error', error => {
+          output?.appendLine(alloglot.ui.errorRunningCommand(command, error))
+          reject(error)
         })
 
-        proc.stdout?.on('data', chunk => output?.append(stripAnsi(chunk)))
+        proc.stdout?.on('data', chunk => output?.append(stripAnsi(chunk.toString())))
+        proc.stderr?.on('data', chunk => output?.append(stripAnsi(chunk.toString())))
+
         stdin && proc.stdin?.write(stdin)
         proc.stdin?.end()
       } catch (err) {
@@ -90,7 +109,7 @@ export namespace AsyncProcess {
 
     asyncProc.then(() => output?.appendLine(alloglot.ui.ranCommand(command)))
 
-    return asyncProc as IAsyncProcess<T>
+    return asyncProc
   }
 
   const stripAnsi: (raw: string) => string = require('strip-ansi').default

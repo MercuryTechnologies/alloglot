@@ -71,7 +71,7 @@ export function deactivate(): Promise<void> {
   }
 
   if (command) {
-    return AsyncProcess.make({ output: globalOutput, command, basedir }, () => undefined)
+    return AsyncProcess.exec({ output: globalOutput, command, basedir }, () => undefined)
       .then(() => {
         globalOutput?.appendLine(alloglot.ui.deactivateCommandDone(command))
         return cleanup()

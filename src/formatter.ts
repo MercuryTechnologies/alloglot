@@ -51,7 +51,7 @@ export function makeFormatter(output: vscode.OutputChannel, config: LanguageConf
           document.lineAt(document.lineCount - 1).rangeIncludingLineBreak.end,
         );
 
-        const proc = AsyncProcess.make(
+        const proc = AsyncProcess.exec(
           { output: verboseOutput ? output : undefined, command, basedir, stdin },
           stdout => [new vscode.TextEdit(entireDocument, stdout)]
         )
