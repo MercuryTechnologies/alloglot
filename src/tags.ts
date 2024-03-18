@@ -229,7 +229,7 @@ namespace TagsSource {
 
     if (initTagsCommand) {
       const command = initTagsCommand
-      disposal.insert(AsyncProcess.make({ output, command, basedir }, () => undefined))
+      disposal.insert(AsyncProcess.exec({ output, command, basedir }, () => undefined))
     }
 
     const onSaveWatcher = (() => {
@@ -238,7 +238,7 @@ namespace TagsSource {
       const refreshTags = (doc: vscode.TextDocument) => {
         if (doc.languageId === languageId) {
           const command = refreshTagsCommand.replace('${file}', doc.fileName)
-          disposal.insert(AsyncProcess.make({ output, command, basedir }, () => undefined))
+          disposal.insert(AsyncProcess.exec({ output, command, basedir }, () => undefined))
         }
       }
 
@@ -274,7 +274,7 @@ namespace TagsSource {
     const command = `${grepPath} -P '${regexp.source}' ${tagsUri.fsPath} | head -n ${limit}`
 
     output?.appendLine(`Searching for ${regexp} in ${tagsUri.fsPath}...`)
-    return AsyncProcess.make({ output, command, basedir }, stdout => filterMap(stdout.split('\n'), line => parseTag(line, output)))
+    return AsyncProcess.exec({ output, command, basedir }, stdout => filterMap(stdout.split('\n'), line => parseTag(line, output)))
   }
 
   function parseTag(line: string, output?: vscode.OutputChannel): Tag | undefined {

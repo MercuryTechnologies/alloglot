@@ -17,7 +17,7 @@ export function makeOnSaveRunner(output: vscode.OutputChannel, config: LanguageC
     const refreshTags = (doc: vscode.TextDocument) => {
       if (doc.languageId === languageId) {
         const command = onSaveCommand.replace('${file}', doc.fileName)
-        disposal.insert(AsyncProcess.make({ output, command, basedir }, () => undefined))
+        disposal.insert(AsyncProcess.exec({ output, command, basedir }, () => undefined))
       }
     }
 
