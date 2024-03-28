@@ -47,7 +47,7 @@ export function makeAnnotations(output: vscode.OutputChannel, config: LanguageCo
 
   const quickFixes = vscode.languages.registerCodeActionsProvider(
     languageId,
-    { provideCodeActions: (document, range, context) => context.diagnostics.map(utils.asQuickFixes).flat() },
+    { provideCodeActions: (document, range, context) => context.diagnostics.map(asQuickFixes).flat() },
     { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
   )
 
@@ -61,16 +61,16 @@ export function makeAnnotations(output: vscode.OutputChannel, config: LanguageCo
 function watchAnnotationsFile(languageId: string, cfg: AnnotationsConfig): vscode.Disposable {
   const diagnostics = vscode.languages.createDiagnosticCollection(`${alloglot.collections.annotations}-${languageId}-${cfg.file}`)
 
-  const messagePath = utils.path<string>(cfg.mapping.message)
-  const filePath = utils.path<string>(cfg.mapping.file)
-  const startLinePath = utils.path<number>(cfg.mapping.startLine)
-  const startColumnPath = utils.path<number>(cfg.mapping.startColumn)
-  const endLinePath = utils.path<number>(cfg.mapping.endLine)
-  const endColumnPath = utils.path<number>(cfg.mapping.endColumn)
-  const sourcePath = utils.path<string>(cfg.mapping.source)
-  const severityPath = utils.path<string>(cfg.mapping.severity)
-  const replacementsPath = utils.path<string | Array<string>>(cfg.mapping.replacements)
-  const referenceCodePath = utils.path<string | number>(cfg.mapping.referenceCode)
+  const messagePath = path<string>(cfg.mapping.message)
+  const filePath = path<string>(cfg.mapping.file)
+  const startLinePath = path<number>(cfg.mapping.startLine)
+  const startColumnPath = path<number>(cfg.mapping.startColumn)
+  const endLinePath = path<number>(cfg.mapping.endLine)
+  const endColumnPath = path<number>(cfg.mapping.endColumn)
+  const sourcePath = path<string>(cfg.mapping.source)
+  const severityPath = path<string>(cfg.mapping.severity)
+  const replacementsPath = path<string | Array<string>>(cfg.mapping.replacements)
+  const referenceCodePath = path<string | number>(cfg.mapping.referenceCode)
 
   function marshalAnnotation(json: any): Annotation | undefined {
     const message = messagePath(json)
@@ -90,7 +90,7 @@ function watchAnnotationsFile(languageId: string, cfg: AnnotationsConfig): vscod
     return {
       message, file, startLine, startColumn, endLine, endColumn, replacements,
       source: sourcePath(json) || `${cfg.file}`,
-      severity: utils.parseSeverity(severityPath(json)),
+      severity: parseSeverity(severityPath(json)),
       referenceCode: referenceCodePath(json)?.toString(),
     }
   }
@@ -124,7 +124,13 @@ function watchAnnotationsFile(languageId: string, cfg: AnnotationsConfig): vscod
     const basedir = vscode.Uri.file(dirname(uri.fsPath))
     vscode.workspace.fs.readFile(uri).then(bytes => {
       annotationsBySourceFile(readAnnotations(bytes)).forEach((anns, file) => {
-        diagnostics.set(vscode.Uri.joinPath(basedir, file), anns.map(ann => utils.annotationAsDiagnostic(basedir, ann)))
+        const path = file.startsWith('/')
+          ? vscode.Uri.file(file)
+          : file.startsWith('~')
+            ? vscode.Uri.file(file.replace('~', process.env.HOME || ''))
+            : vscode.Uri.joinPath(basedir, file)
+
+        diagnostics.set(path, anns.map(ann => annotationAsDiagnostic(basedir, ann)))
       })
     })
   }
@@ -143,67 +149,65 @@ function watchAnnotationsFile(languageId: string, cfg: AnnotationsConfig): vscod
   return vscode.Disposable.from(...watchers)
 }
 
-namespace utils {
-  export function annotationAsDiagnostic(basedir: vscode.Uri, ann: Annotation): vscode.Diagnostic {
-    const range = new vscode.Range(
-      new vscode.Position(ann.startLine - 1, ann.startColumn - 1),
-      new vscode.Position(ann.endLine - 1, ann.endColumn - 1)
-    )
+function annotationAsDiagnostic(basedir: vscode.Uri, ann: Annotation): vscode.Diagnostic {
+  const range = new vscode.Range(
+    new vscode.Position(ann.startLine - 1, ann.startColumn - 1),
+    new vscode.Position(ann.endLine - 1, ann.endColumn - 1)
+  )
 
-    // we are abusing the relatedInformation field to store replacements
-    // we look them up later when we need to create quick fixes
-    const relatedInformation = ann.replacements.map(replacement => {
-      const uri = vscode.Uri.joinPath(basedir, ann.file)
-      const location = new vscode.Location(uri, range)
-      return new vscode.DiagnosticRelatedInformation(location, replacement)
-    })
+  // we are abusing the relatedInformation field to store replacements
+  // we look them up later when we need to create quick fixes
+  const relatedInformation = ann.replacements.map(replacement => {
+    const uri = vscode.Uri.joinPath(basedir, ann.file)
+    const location = new vscode.Location(uri, range)
+    return new vscode.DiagnosticRelatedInformation(location, replacement)
+  })
 
-    // i wish they gave an all-args constructor
-    const diagnostic = new vscode.Diagnostic(range, ann.message, asDiagnosticSeverity(ann.severity))
-    diagnostic.source = ann.source
-    diagnostic.relatedInformation = relatedInformation
-    diagnostic.code = ann.referenceCode
-    return diagnostic
+  // i wish they gave an all-args constructor
+  const diagnostic = new vscode.Diagnostic(range, ann.message, asDiagnosticSeverity(ann.severity))
+  diagnostic.source = ann.source
+  diagnostic.relatedInformation = relatedInformation
+  diagnostic.code = ann.referenceCode
+  return diagnostic
+}
+
+function asDiagnosticSeverity(sev: Annotation['severity']): vscode.DiagnosticSeverity {
+  switch (sev) {
+    case 'error': return vscode.DiagnosticSeverity.Error
+    case 'warning': return vscode.DiagnosticSeverity.Warning
+    case 'info': return vscode.DiagnosticSeverity.Information
+    case 'hint': return vscode.DiagnosticSeverity.Hint
   }
+}
 
-  function asDiagnosticSeverity(sev: Annotation['severity']): vscode.DiagnosticSeverity {
-    switch (sev) {
-      case 'error': return vscode.DiagnosticSeverity.Error
-      case 'warning': return vscode.DiagnosticSeverity.Warning
-      case 'info': return vscode.DiagnosticSeverity.Information
-      case 'hint': return vscode.DiagnosticSeverity.Hint
-    }
-  }
+// this depends on the fact that we're abusing the `relatedInformation` field
+// see `annotationAsDiagnostic` above
+function asQuickFixes(diag: vscode.Diagnostic): Array<vscode.CodeAction> {
+  const actions = diag.relatedInformation?.map(info => {
+    const action = new vscode.CodeAction(diag.message, vscode.CodeActionKind.QuickFix)
+    action.diagnostics = [diag]
+    action.edit = new vscode.WorkspaceEdit
+    action.edit.replace(info.location.uri, info.location.range, info.message)
+    return action
+  })
+  return actions || []
+}
 
-  // this depends on the fact that we're abusing the `relatedInformation` field
-  // see `annotationAsDiagnostic` above
-  export function asQuickFixes(diag: vscode.Diagnostic): Array<vscode.CodeAction> {
-    const actions = diag.relatedInformation?.map(info => {
-      const action = new vscode.CodeAction(diag.message, vscode.CodeActionKind.QuickFix)
-      action.diagnostics = [diag]
-      action.edit = new vscode.WorkspaceEdit
-      action.edit.replace(info.location.uri, info.location.range, info.message)
-      return action
-    })
-    return actions || []
+function path<T>(keys: Array<string> | undefined): (json: any) => T | undefined {
+  if (!keys) return () => undefined
+  else return json => {
+    const result = keys.reduce((acc, key) => acc?.[key], json)
+    if (result) return result as T
+    else return undefined
   }
+}
 
-  export function path<T>(keys: Array<string> | undefined): (json: any) => T | undefined {
-    if (!keys) return () => undefined
-    else return json => {
-      const result = keys.reduce((acc, key) => acc?.[key], json)
-      if (result) return result as T
-      else return
-    }
-  }
-
-  export function parseSeverity(raw: string | undefined): Annotation['severity'] {
-    if (!raw) return 'error'
-    const lower = raw.toLowerCase()
-    if (lower.includes('error')) return 'error'
-    if (lower.includes('warning')) return 'warning'
-    if (lower.includes('info')) return 'info'
-    if (lower.includes('hint')) return 'hint'
-    return 'error'
-  }
+function parseSeverity(raw: string | undefined): Annotation['severity'] {
+  if (!raw) return 'error'
+  const lower = raw.toLowerCase()
+  if (lower.includes('error')) return 'error'
+  if (lower.includes('warning')) return 'warning'
+  if (lower.includes('info')) return 'info'
+  if (lower.includes('hint')) return 'hint'
+  return 'error'
 }
