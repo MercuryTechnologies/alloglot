@@ -33,7 +33,7 @@ Portions of this software are derived from [ghcid](https://github.com/ndmitchell
 > OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-import { dirname } from 'path'
+import { dirname, isAbsolute } from 'path'
 import * as vscode from 'vscode'
 
 import { Annotation, AnnotationsConfig, LanguageConfig, alloglot } from './config'
@@ -124,13 +124,11 @@ function watchAnnotationsFile(languageId: string, cfg: AnnotationsConfig): vscod
     const basedir = vscode.Uri.file(dirname(uri.fsPath))
     vscode.workspace.fs.readFile(uri).then(bytes => {
       annotationsBySourceFile(readAnnotations(bytes)).forEach((anns, file) => {
-        const path = file.startsWith('/')
+        const uri = isAbsolute(file)
           ? vscode.Uri.file(file)
-          : file.startsWith('~')
-            ? vscode.Uri.file(file.replace('~', process.env.HOME || ''))
-            : vscode.Uri.joinPath(basedir, file)
+          : vscode.Uri.joinPath(basedir, file)
 
-        diagnostics.set(path, anns.map(ann => annotationAsDiagnostic(basedir, ann)))
+        diagnostics.set(uri, anns.map(ann => annotationAsDiagnostic(basedir, ann)))
       })
     })
   }
