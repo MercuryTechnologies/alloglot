@@ -8,9 +8,16 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [3.2.3]
 
+- delete diagnostics for files as they are saved.
+- fix bug in path handling from annotations files.
+
 ## [3.2.2]
 
+- Use `spawn` instead of `exec` to avoid growing stdin buffer w/o bound.
+
 ## [3.2.1]
+
+- Dialog box when activate command fails. User can ignore or retry.
 
 ## [3.2.0]
 
