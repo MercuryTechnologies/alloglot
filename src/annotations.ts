@@ -115,20 +115,14 @@ function watchAnnotationsFile(languageId: string, cfg: AnnotationsConfig): vscod
     return sorted
   }
 
-  function clearAnnotations(uri: vscode.Uri): void {
+  function addAnnotations(annFile: vscode.Uri): void {
     diagnostics.clear()
-  }
-
-  function addAnnotations(uri: vscode.Uri): void {
-    clearAnnotations(uri)
-    const basedir = vscode.Uri.file(dirname(uri.fsPath))
-    vscode.workspace.fs.readFile(uri).then(bytes => {
-      annotationsBySourceFile(readAnnotations(bytes)).forEach((anns, file) => {
-        const uri = isAbsolute(file)
-          ? vscode.Uri.file(file)
-          : vscode.Uri.joinPath(basedir, file)
-
-        diagnostics.set(uri, anns.map(ann => annotationAsDiagnostic(basedir, ann)))
+    const basedir = vscode.Uri.file(dirname(annFile.fsPath))
+    vscode.workspace.fs.readFile(annFile).then(bytes => {
+      annotationsBySourceFile(readAnnotations(bytes)).forEach((anns, srcFile) => {
+        const srcUri = fileUri(basedir, srcFile)
+        const diags = anns.map(ann => annotationAsDiagnostic(basedir, ann))
+        diagnostics.set(srcUri, diags)
       })
     })
   }
@@ -139,12 +133,18 @@ function watchAnnotationsFile(languageId: string, cfg: AnnotationsConfig): vscod
 
     watcher.onDidChange(addAnnotations)
     watcher.onDidCreate(addAnnotations)
-    watcher.onDidDelete(clearAnnotations)
+    watcher.onDidDelete(() => diagnostics.clear())
 
     return watcher
   }) || []
 
-  return vscode.Disposable.from(...watchers)
+  const cleanup = vscode.workspace.onDidSaveTextDocument(doc => {
+    if (doc.languageId === languageId) {
+      diagnostics.delete(doc.uri)
+    }
+  })
+
+  return vscode.Disposable.from(cleanup, ...watchers)
 }
 
 function annotationAsDiagnostic(basedir: vscode.Uri, ann: Annotation): vscode.Diagnostic {
@@ -156,9 +156,9 @@ function annotationAsDiagnostic(basedir: vscode.Uri, ann: Annotation): vscode.Di
   // we are abusing the relatedInformation field to store replacements
   // we look them up later when we need to create quick fixes
   const relatedInformation = ann.replacements.map(replacement => {
-    const uri = vscode.Uri.joinPath(basedir, ann.file)
-    const location = new vscode.Location(uri, range)
-    return new vscode.DiagnosticRelatedInformation(location, replacement)
+    const srcUri = fileUri(basedir, ann.file)
+    const srcLocation = new vscode.Location(srcUri, range)
+    return new vscode.DiagnosticRelatedInformation(srcLocation, replacement)
   })
 
   // i wish they gave an all-args constructor
@@ -208,4 +208,10 @@ function parseSeverity(raw: string | undefined): Annotation['severity'] {
   if (lower.includes('info')) return 'info'
   if (lower.includes('hint')) return 'hint'
   return 'error'
+}
+
+function fileUri(basedir: vscode.Uri, file: string): vscode.Uri {
+  return isAbsolute(file)
+    ? vscode.Uri.file(file)
+    : vscode.Uri.joinPath(basedir, file)
 }
