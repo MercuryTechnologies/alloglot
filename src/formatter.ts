@@ -53,7 +53,7 @@ export function makeFormatter(output: vscode.OutputChannel, config: LanguageConf
 
         const proc = AsyncProcess.exec(
           { output: verboseOutput ? output : undefined, command, basedir, stdin },
-          stdout => [new vscode.TextEdit(entireDocument, stdout)]
+          stdout => stdout ? [new vscode.TextEdit(entireDocument, stdout)] : []
         )
 
         disposal.insert(proc)
