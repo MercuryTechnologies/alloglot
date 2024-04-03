@@ -6,6 +6,8 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+- fix bug where formatter erases contents of document if it returns no output.
+
 ## [3.2.3]
 
 - delete diagnostics for files as they are saved.
