@@ -22,10 +22,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "alloglot.command.restart",
-        "title": "Alloglot: Restart Alloglot"
-      },
-      {
         "command": "alloglot.command.apisearch",
         "title": "Alloglot: Go to API Search"
       },
@@ -57,11 +53,6 @@
         "alloglot.revealActivateCommandOutput": {
           "type": "boolean",
           "description": "If `true`, Alloglot will automatically reveal the activation command's output channel.",
-          "default": null
-        },
-        "alloglot.deactivateCommand": {
-          "type": "string",
-          "description": "A shell command to run on deactivation.",
           "default": null
         },
         "alloglot.verboseOutput": {

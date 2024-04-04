@@ -22,8 +22,6 @@ Most of the properties are optional, so you can make use of only the features th
 ```json
 {
   "alloglot.activateCommand": "ghcid --command=\"cabal repl --ghc-options=-ddump-json\" --output=\"ghc-out.json\"",
-  "alloglot.revealActivateCommandOutput": true,
-  "alloglot.deactivateCommand": "pgrep ghc | xargs kill",
   "alloglot.languages": [
     {
       "languageId": "cabal",
@@ -61,7 +59,7 @@ Most of the properties are optional, so you can make use of only the features th
           }
         },
         {
-          "file": "package-deps-index.tsv",
+          "file": ".tags-dependencies",
           "completionsProvider": true,
           "importsProvider": {
             "importLinePattern": "import ${module}",
@@ -175,11 +173,6 @@ export type TConfig = {
    * If `true`, Alloglot will automatically reveal the activation command's output channel.
    */
   revealActivateCommandOutput?: boolean
-
-  /**
-   * A shell command to run on deactivation.
-   */
-  deactivateCommand?: string
 
   /**
    * An array of per-language configurations.
@@ -337,7 +330,7 @@ export type AnnotationsConfig = {
 }
 
 /**
- * Intermediate representation between compiler JSON output and VS Code diagnostics.
+ * Intermediate representation of compiler-generated JSON output and VS Code diagnostics.
  */
 export type Annotation = {
   source: string
@@ -353,7 +346,7 @@ export type Annotation = {
 }
 
 /**
- * Mapping between arbitrary JSON objects and properties of `Annotation`.
+ * Mapping between arbitrary JSON object and properties of `Annotation`.
  * Each property is an array of strings that will be used as a path into the JSON object.
  */
 export type AnnotationsMapping = {

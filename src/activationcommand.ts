@@ -9,17 +9,9 @@ export function makeActivationCommand(parentOutput: IHierarchicalOutputChannel, 
   const output = parentOutput.split()
   reveal && output.show(true)
 
-  const proc = AsyncProcess.spawn({ output, command, basedir })
-
-  proc.then(() => () => {
+  const proc = AsyncProcess.exec({ output, command, basedir }, () => {
     parentOutput.appendLine(alloglot.ui.activateCommandDone(command))
   })
 
-  proc.catch(err => {
-    vscode.window
-      .showErrorMessage<'Ignore' | 'Restart'>(alloglot.ui.activateCommandFailed(err), 'Ignore', 'Restart')
-      .then(choice => choice === 'Restart' && vscode.commands.executeCommand(alloglot.commands.restart))
-  })
-
-  return vscode.Disposable.from(proc, output)
+  return vscode.Disposable.from(proc.disposable, output)
 }

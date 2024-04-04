@@ -6,6 +6,11 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+- remove `deactiveCommand` b/c we couldn't guarantee it would always run.
+- remove `Alloglot: restart alloglot` b/c it was broken.
+- remove dialog box when activation command fails b/c `restart alloglot` was broken.
+- (hopefully) better handling of killing child processes.
+
 ## [3.2.4]
 
 - fix bug where formatter erases contents of document if it returns no output.
