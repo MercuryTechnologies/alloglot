@@ -56,8 +56,8 @@ export function makeFormatter(output: vscode.OutputChannel, config: LanguageConf
           stdout => stdout ? [new vscode.TextEdit(entireDocument, stdout)] : []
         )
 
-        disposal.insert(proc)
-        return proc
+        disposal.insert(proc.disposable)
+        return proc.promise
       }
     }
   )

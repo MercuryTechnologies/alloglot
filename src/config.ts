@@ -18,11 +18,6 @@ export type TConfig = {
   revealActivateCommandOutput?: boolean
 
   /**
-   * A shell command to run on deactivation.
-   */
-  deactivateCommand?: string
-
-  /**
    * An array of per-language configurations.
    */
   languages?: Array<LanguageConfig>
@@ -246,14 +241,13 @@ export namespace Config {
       const workspaceSettings = vscode.workspace.getConfiguration(alloglot.config.root)
       const activateCommand = workspaceSettings.get<string>(alloglot.config.activateCommand)
       const revealActivateCommandOutput = workspaceSettings.get<boolean>(alloglot.config.revealActivateCommandOutput)
-      const deactivateCommand = workspaceSettings.get<string>(alloglot.config.deactivateCommand)
       const languages = workspaceSettings.get<Array<LanguageConfig>>(alloglot.config.languages)
       const verboseOutput = workspaceSettings.get<boolean>(alloglot.config.verboseOutput)
       const mergeConfigs = workspaceSettings.get<boolean>(alloglot.config.mergeConfigs)
       const grepPath = workspaceSettings.get<string>(alloglot.config.grepPath)
-      const settingsExist = !!activateCommand || !!revealActivateCommandOutput || !!languages || !!deactivateCommand || !!verboseOutput || !!mergeConfigs || !!grepPath
+      const settingsExist = !!activateCommand || !!revealActivateCommandOutput || !!languages || !!verboseOutput || !!mergeConfigs || !!grepPath
       output.appendLine(alloglot.ui.workspaceConfigExists(settingsExist))
-      if (settingsExist) return { activateCommand, revealActivateCommandOutput, deactivateCommand, languages, verboseOutput, mergeConfigs, grepPath }
+      if (settingsExist) return { activateCommand, revealActivateCommandOutput, languages, verboseOutput, mergeConfigs, grepPath }
       return undefined
     } catch (err) {
       output.appendLine(alloglot.ui.couldNotReadWorkspace(err))
@@ -266,7 +260,6 @@ export namespace Config {
   function sanitize(output: vscode.OutputChannel, config: TConfig): TConfig {
     try {
       config.activateCommand = config.activateCommand?.trim()
-      config.deactivateCommand = config.deactivateCommand?.trim()
       config.grepPath = config.grepPath?.trim()
       config.languages = config.languages?.filter(lang => {
 
@@ -306,7 +299,6 @@ export namespace Config {
   function merge(mask: TConfig, base: TConfig): TConfig {
     return {
       activateCommand: mask.activateCommand || base.activateCommand,
-      deactivateCommand: mask.deactivateCommand || base.deactivateCommand,
       languages: arrayMerge(mask.languages || [], base.languages || [], lang => lang.languageId, languageMerge),
       revealActivateCommandOutput: typeof mask.revealActivateCommandOutput === 'boolean' ? mask.revealActivateCommandOutput : base.revealActivateCommandOutput,
       verboseOutput: typeof mask.verboseOutput === 'boolean' ? mask.verboseOutput : base.verboseOutput,
@@ -359,25 +351,18 @@ export namespace alloglot {
 
   export namespace ui {
     export const activateCommandDone = (cmd: string) => `Activation command “${cmd}” has completed.`
-    export const activateCommandFailed = (err: any) => `Activation command has failed: ${err}\n\nIgnore the failure or restart Alloglot?`
     export const addImport = (moduleName: string) => `Add import: ${moduleName}`
     export const annotationsStarted = 'Annotations started.'
     export const appliedEdit = (success: boolean) => `Applied edit: ${success}`
     export const applyingTransformation = (t: any, xs: Array<string>) => `Applying single transformation ${JSON.stringify(t)} to split string array ${xs}`
     export const applyingTransformations = (t: any, x: string) => `Applying transformations ${JSON.stringify(t)} to string ${x}`
     export const commandKilled = (cmd: string) => `Killed “${cmd}”.`
-    export const commandLogs = (cmd: string, logs: string) => `Logs from “${cmd}”:\n\t${logs}`
     export const commandNoOutput = (cmd: string) => `Received no output from “${cmd}”.`
     export const couldNotReadFallback = (err: any) => `Could not read fallback configuration: ${err}`
     export const couldNotReadWorkspace = (err: any) => `Could not read workspace configuration: ${err}`
     export const couldNotSanitizeConfig = (err: any) => `Configuration is malformed: ${err}`
     export const creatingApiSearch = (langIds: Array<string>) => `Creating API search command for languages: ${langIds}`
     export const creatingTagsSource = (path: string) => `Creating tags source for path: ${path}`
-    export const deactivatedAlloglot = 'Deactivated Alloglot.'
-    export const deactivatingAlloglot = 'Deactivating Alloglot...'
-    export const deactivateCommandDone = (cmd: string) => `Deactivation command has completed: ${cmd}`
-    export const deactivateCommandFailed = (err: any) => `Deactivation command has completed: ${err}`
-    export const disposingAlloglot = 'Disposing Alloglot...'
     export const errorKillingCommand = (cmd: string, err: any) => `Error killing “${cmd}”:\n\t${err}`
     export const errorRunningCommand = (cmd: string, err: any) => `Error running “${cmd}”:\n\t${err}`
     export const fileMatcherResult = (result: any) => `Match: ${result}`
@@ -399,7 +384,6 @@ export namespace alloglot {
     export const ranCommand = (cmd: string) => `Ran “${cmd}”.`
     export const readingFallbackConfig = (path: string) => `Reading fallback configuration from path: ${path}`
     export const readingWorkspaceSettings = 'Reading configuration from workspace settings'
-    export const readyToRestart = 'Ready to restart Alloglot.'
     export const registeredCompletionsProvider = 'Registered completions provider.'
     export const registeredDefinitionsProvider = 'Registered definitions provider.'
     export const registeredImportsProvider = 'Registered imports provider.'
@@ -411,7 +395,6 @@ export namespace alloglot {
     export const renderedImportLine = (line?: string) => `Rendered import line: ${line}`
     export const renderedModuleName = (name?: string) => `Rendered module name: ${name}`
     export const renderingImportLine = (tag: any) => `Rendering import line for tag: ${JSON.stringify(tag)}`
-    export const restartingAlloglot = 'Restarting Alloglot...'
     export const runningCommand = (cmd: string, cwd?: string) => `Running “${cmd}” in “${cwd}”...`
     export const runningSuggestImports = 'Running suggest imports...'
     export const splittingOutputChannel = (name: string) => `Creating new output channel: ${name}`
@@ -423,7 +406,6 @@ export namespace alloglot {
     export const stoppingLanguageClient = 'Stopping language client...'
     export const tagsStarted = 'Tags started.'
     export const transformationResult = (x: string) => `Result: ${x}`
-    export const usingActivateCommandOutput = (channelId: string) => `Activation command stdout broadcasting to channel: ${channelId}`
     export const usingConfig = (config: any) => `Using configuration:\n${JSON.stringify(config, null, 2)}`
     export const usingFileMatcher = (matcher: any) => `File matcher: ${matcher}`
     export const workspaceConfigExists = (exists: boolean) => `Configuration exists in settings: ${exists}`
@@ -448,7 +430,6 @@ export namespace alloglot {
 
   export namespace commands {
     const root = `${alloglot.root}.command` as const
-    export const restart = `${root}.restart` as const
     export const apiSearch = `${root}.apisearch` as const
     export const suggestImports = `${root}.suggestimports` as const
   }
@@ -461,7 +442,6 @@ export namespace alloglot {
     export const activateCommand = 'activateCommand' as const
     export const revealActivateCommandOutput = 'revealActivateCommandOutput' as const
     export const onSaveCommand = 'onSaveCommand' as const
-    export const deactivateCommand = 'deactivateCommand' as const
     export const verboseOutput = 'verboseOutput' as const
     export const mergeConfigs = 'mergeConfigs' as const
   }

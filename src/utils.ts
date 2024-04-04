@@ -26,7 +26,10 @@ export namespace Disposal {
   }
 }
 
-export interface IAsyncProcess<T> extends vscode.Disposable, Promise<T> { }
+export interface IAsyncProcess<T> {
+  disposable: vscode.Disposable
+  promise: Promise<T>
+}
 
 export namespace AsyncProcess {
   type Spec = {
@@ -43,7 +46,7 @@ export namespace AsyncProcess {
    */
   export function spawn(spec: Spec): IAsyncProcess<void> {
     return make<void>(spec, (cmd, opts, resolve) => {
-      const proc = child_process.spawn(cmd, [], {...opts, shell: true})
+      const proc = child_process.spawn(cmd, [], { ...opts, shell: true })
       proc.on('exit', resolve)
       return proc
     })
@@ -63,20 +66,35 @@ export namespace AsyncProcess {
     })
   }
 
-  function make<T>(spec: Spec, makeProc: (command: string, opts: {cwd?: string, signal?: AbortSignal}, resolve: (t: T) => void) => child_process.ChildProcess): IAsyncProcess<T> {
-    let controller: AbortController | undefined = new AbortController()
-    const { signal } = controller
-
+  function make<T>(spec: Spec, makeProc: (command: string, opts: { cwd?: string, signal?: AbortSignal }, resolve: (t: T) => void) => child_process.ChildProcess): IAsyncProcess<T> {
     const { output, command, basedir, stdin } = spec
     const cwd = basedir?.fsPath
 
+    let proc: child_process.ChildProcess | undefined = undefined
+
+    const disposable = vscode.Disposable.from({
+      dispose: () => {
+        if (proc) {
+          try {
+            output?.appendLine(alloglot.ui.killingCommand(command))
+            proc.kill('SIGINT')
+            while (!proc.killed) { }
+            proc = undefined
+            output?.appendLine(alloglot.ui.commandKilled(command))
+          } catch (err) {
+            output?.appendLine(alloglot.ui.errorKillingCommand(command, err))
+          }
+        }
+      }
+    })
+
     // giving this an `any` signature allows us to add a `dispose` method.
     // it's a little bit jank, but i don't know how else to do it.
-    const asyncProc: any = new Promise<T>((resolve, reject) => {
+    const promise: Promise<T> = new Promise<T>((resolve, reject) => {
       output?.appendLine(alloglot.ui.runningCommand(command, cwd))
 
       try {
-        const proc = makeProc(command, { cwd, signal }, resolve)
+        proc = makeProc(command, { cwd }, resolve)
 
         proc.on('error', error => {
           output?.appendLine(alloglot.ui.errorRunningCommand(command, error))
@@ -94,22 +112,9 @@ export namespace AsyncProcess {
       }
     })
 
-    asyncProc.dispose = () => {
-      if (controller) {
-        try {
-          output?.appendLine(alloglot.ui.killingCommand(command))
-          controller.abort()
-          controller = undefined // ensure `dispose()` is idempotent
-          output?.appendLine(alloglot.ui.commandKilled(command))
-        } catch (err) {
-          output?.appendLine(alloglot.ui.errorKillingCommand(command, err))
-        }
-      }
-    }
+    promise.then(() => output?.appendLine(alloglot.ui.ranCommand(command)))
 
-    asyncProc.then(() => output?.appendLine(alloglot.ui.ranCommand(command)))
-
-    return asyncProc
+    return { disposable, promise }
   }
 
   const stripAnsi: (raw: string) => string = require('strip-ansi').default

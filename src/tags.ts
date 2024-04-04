@@ -229,7 +229,7 @@ namespace TagsSource {
 
     if (initTagsCommand) {
       const command = initTagsCommand
-      disposal.insert(AsyncProcess.exec({ output, command, basedir }, () => undefined))
+      disposal.insert(AsyncProcess.exec({ output, command, basedir }, () => undefined).disposable)
     }
 
     const onSaveWatcher = (() => {
@@ -238,7 +238,7 @@ namespace TagsSource {
       const refreshTags = (doc: vscode.TextDocument) => {
         if (doc.languageId === languageId) {
           const command = refreshTagsCommand.replace('${file}', doc.fileName)
-          disposal.insert(AsyncProcess.exec({ output, command, basedir }, () => undefined))
+          disposal.insert(AsyncProcess.exec({ output, command, basedir }, () => undefined).disposable)
         }
       }
 
@@ -250,16 +250,16 @@ namespace TagsSource {
         if (!prefix) return Promise.resolve([])
         const escaped = prefix.replace(/(["\s'$`\\])/g, '\\$1')
         const proc = grep(config, new RegExp(`^${escaped}`), limit, output)
-        disposal.insert(proc)
-        return proc
+        disposal.insert(proc.disposable)
+        return proc.promise
       },
 
       findExact(exact, limit = 100) {
         if (!exact) return Promise.resolve([])
         const escaped = exact.replace(/(["\s'$`\\])/g, '\\$1')
         const proc = grep(config, new RegExp(`^${escaped}\\t`), limit, output)
-        disposal.insert(proc)
-        return proc
+        disposal.insert(proc.disposable)
+        return proc.promise
       },
 
       dispose() {
