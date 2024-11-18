@@ -50,6 +50,26 @@ export function makeClient(output: IHierarchicalOutputChannel, config: LanguageC
   client.start()
   output.appendLine(alloglot.ui.languageClientStarted)
 
+  const inlayHintsProvider = vscode.languages.registerInlayHintsProvider(
+    languageId,
+    {
+      provideInlayHints: async (document, range, token) => {
+        try {
+          const x: any = await client.sendRequest(new lsp.RequestType('textDocument/inlayHint'),
+            {
+              textDocument: client.code2ProtocolConverter.asTextDocumentIdentifier(document),
+              range: client.code2ProtocolConverter.asRange(range)
+            }
+          )
+          return token.isCancellationRequested ? [] : x.map(
+            (hint: vscode.InlayHint) => new vscode.InlayHint(client.protocol2CodeConverter.asPosition(hint.position), hint.label))
+        }
+        catch (error) { return null }
+      },
+      resolveInlayHint: (hint, token) => null
+    }
+  )
+
   return vscode.Disposable.from(
     clientChannel,
     {
@@ -59,5 +79,6 @@ export function makeClient(output: IHierarchicalOutputChannel, config: LanguageC
         output.appendLine(alloglot.ui.languageClientStopped)
       }
     }
+    , inlayHintsProvider
   )
 }

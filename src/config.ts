@@ -53,6 +53,8 @@ export type LanguageConfig = {
    */
   serverCommand?: string
 
+  inlayHints?: Boolean
+
   /**
    * A formatter shell command.
    * STDIN will be equal to the contents of the current text document,
