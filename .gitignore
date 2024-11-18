@@ -1,3 +1,4 @@
 *.vsix
 dist/*
 node_modules/*
+ghc-out.json
