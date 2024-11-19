@@ -176,6 +176,7 @@ function makeTag(output: IHierarchicalOutputChannel, grepPath: string, languageI
       })
     }
 
+    // TODO: This explodes, at least in MWB, because it gets run multiple times!?
     disposal.insert(vscode.commands.registerTextEditorCommand(alloglot.commands.suggestImports, runSuggestImports))
     disposal.insert(vscode.languages.registerCodeActionsProvider(languageId, {
       provideCodeActions(document, range) {
