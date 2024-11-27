@@ -9,7 +9,7 @@ import { IHierarchicalOutputChannel } from './utils'
  * The client launches its own server in a child process and cleans up after itself.
  */
 export function makeClient(output: IHierarchicalOutputChannel, config: LanguageConfig): vscode.Disposable {
-  const { languageId, serverCommand } = config
+  const { languageId, serverCommand, serverArgs } = config
   if (!languageId || !serverCommand) return vscode.Disposable.from()
 
   const serverExecutable = {
@@ -18,7 +18,7 @@ export function makeClient(output: IHierarchicalOutputChannel, config: LanguageC
       cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
       env: process.env
     },
-    args: [],
+    args: serverArgs || [],
     transport: lsp.TransportKind.stdio
   }
 
