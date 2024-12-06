@@ -54,6 +54,11 @@ export type LanguageConfig = {
   serverCommand?: string
 
   /**
+   * A list of arguments passed to the `serverCommand`.
+   */
+  serverArgs?: string[],
+
+  /**
    * A formatter shell command.
    * STDIN will be equal to the contents of the current text document,
    * not the file contents as it exists on disk.
@@ -265,6 +270,7 @@ export namespace Config {
 
         lang.languageId = lang.languageId.trim()
         lang.serverCommand = lang.serverCommand?.trim()
+        lang.serverArgs = lang.serverArgs?.map(arg => arg.trim())
         lang.formatCommand = lang.formatCommand?.trim()
         lang.onSaveCommand = lang.onSaveCommand?.trim()
         lang.apiSearchUrl = lang.apiSearchUrl?.trim()
@@ -310,6 +316,7 @@ export namespace Config {
     return {
       languageId: mask.languageId,
       serverCommand: mask.serverCommand || base.serverCommand,
+      serverArgs: mask.serverArgs || base.serverArgs,
       formatCommand: mask.formatCommand || base.formatCommand,
       apiSearchUrl: mask.apiSearchUrl || base.apiSearchUrl,
       tags: arrayMerge(mask.tags || [], base.tags || [], tag => tag.file, tagMerge),
