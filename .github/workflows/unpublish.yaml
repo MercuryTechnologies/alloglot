@@ -1,0 +1,39 @@
+name: Unpublish Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension-id:
+        required: true
+        default: 'alloglot'
+
+jobs:
+  unpublish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install vsce
+      run: npm install -g vsce
+
+    - name: Authenticate with Personal Access Token (PAT)
+      env:
+        VSCE_PAT: ${{ secrets.MARKETPLACE_TOKEN}}
+      run: |
+        if [ -z "$VSCE_PAT" ]; then
+          echo "VSCE_PAT secret is not set. Exiting."
+          exit 1
+        fi
+
+    - name: Unpublish extension
+      env:
+        VSCE_PAT: ${{ secrets.MARKETPLACE_TOKEN}}
+      run: |
+        vsce unpublish ${{ github.event.inputs['extension-id'] }} --force
