@@ -4,6 +4,7 @@ on:
       - closed
     branches:
       - main
+  workflow_dispatch:
 
 name: Build and publish a release
 
@@ -90,6 +91,6 @@ jobs:
       - name: Publish to Visual Studio Marketplace
         uses: HaaLeo/publish-vscode-extension@v1
         with:
-          pat: ${{ secrets.MARKETPLACE_TOKEN }}
+          pat: ${{ secrets.MERCURY_MARKETPLACE_TOKEN }}
           registryUrl: https://marketplace.visualstudio.com
           extensionFile: ${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix
