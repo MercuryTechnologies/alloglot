@@ -18,14 +18,14 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'
+        node-version: '18'
 
     - name: Install vsce
-      run: npm install -g vsce
+      run: npm install -g @vscode/vsce
 
     - name: Authenticate with Personal Access Token (PAT)
       env:
-        VSCE_PAT: ${{ secrets.MARKETPLACE_TOKEN}}
+        VSCE_PAT: ${{ secrets.MARKETPLACE_TOKEN }}
       run: |
         if [ -z "$VSCE_PAT" ]; then
           echo "VSCE_PAT secret is not set. Exiting."
@@ -34,6 +34,6 @@ jobs:
 
     - name: Unpublish extension
       env:
-        VSCE_PAT: ${{ secrets.MARKETPLACE_TOKEN}}
+        VSCE_PAT: ${{ secrets.MARKETPLACE_TOKEN }}
       run: |
-        vsce unpublish ${{ github.event.inputs['extension-id'] }} --force
+        npx @vscode/vsce unpublish ${{ github.event.inputs['extension-id'] }} --pat ${{ secrets.MARKETPLACE_TOKEN }} --force
