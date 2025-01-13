@@ -2,7 +2,7 @@
   "name": "alloglot-mercury",
   "displayName": "Alloglot Mercury",
   "description": "Language agnostic IDE for VS Code",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "publisher": "mercurytechnologies",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
