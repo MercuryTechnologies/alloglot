@@ -6,6 +6,10 @@ This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [unreleased]
 
+## [4.0.2]
+
+## [4.0.1]
+
 ## [4.0.0]
 
 - remove `deactiveCommand` b/c we couldn't guarantee it would always run.
