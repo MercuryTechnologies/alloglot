@@ -357,38 +357,39 @@ export namespace alloglot {
   export const root = 'alloglot' as const
 
   export namespace ui {
-    export const activateCommandDone = (cmd: string) => `Activation command “${cmd}” has completed.`
+    export const activateCommandDone = (cmd: string) => `Activation command "${cmd}" has completed.`
     export const addImport = (moduleName: string) => `Add import: ${moduleName}`
     export const annotationsStarted = 'Annotations started.'
     export const appliedEdit = (success: boolean) => `Applied edit: ${success}`
     export const applyingTransformation = (t: any, xs: Array<string>) => `Applying single transformation ${JSON.stringify(t)} to split string array ${xs}`
     export const applyingTransformations = (t: any, x: string) => `Applying transformations ${JSON.stringify(t)} to string ${x}`
-    export const commandKilled = (cmd: string) => `Killed “${cmd}”.`
-    export const commandNoOutput = (cmd: string) => `Received no output from “${cmd}”.`
+    export const commandKilled = (cmd: string) => `Killed "${cmd}".`
+    export const commandNoOutput = (cmd: string) => `Received no output from "${cmd}".`
     export const couldNotReadFallback = (err: any) => `Could not read fallback configuration: ${err}`
     export const couldNotReadWorkspace = (err: any) => `Could not read workspace configuration: ${err}`
     export const couldNotSanitizeConfig = (err: any) => `Configuration is malformed: ${err}`
     export const creatingApiSearch = (langIds: Array<string>) => `Creating API search command for languages: ${langIds}`
     export const creatingTagsSource = (path: string) => `Creating tags source for path: ${path}`
-    export const errorKillingCommand = (cmd: string, err: any) => `Error killing “${cmd}”:\n\t${err}`
-    export const errorRunningCommand = (cmd: string, err: any) => `Error running “${cmd}”:\n\t${err}`
+    export const deactivatingAlloglot = 'Deactivating Alloglot...'
+    export const errorKillingCommand = (cmd: string, err: any) => `Error killing "${cmd}":\n\t${err}`
+    export const errorRunningCommand = (cmd: string, err: any) => `Error running "${cmd}":\n\t${err}`
     export const fileMatcherResult = (result: any) => `Match: ${result}`
     export const findingImportPosition = 'Finding import position...'
     export const formatterStarted = 'Formatter started.'
     export const foundBlankLine = (line: number) => `Found blank line at line ${line}`
     export const foundImportPosition = (line: number) => `Found import at line ${line}`
-    export const killingCommand = (cmd: string) => `Killing “${cmd}”...`
+    export const killingCommand = (cmd: string) => `Killing "${cmd}"...`
     export const languageClientStarted = 'Language client started.'
     export const languageClientStopped = 'Language client stopped.'
     export const makingImportSuggestion = (tag: any) => `Making import suggestion for tag: ${JSON.stringify(tag)}`
-    export const mergingConfigs = 'Merging workspace configuration with “.vscode/alloglot.json”...'
+    export const mergingConfigs = 'Merging workspace configuration with ".vscode/alloglot.json"...'
     export const noBlankLineFound = 'No blank line found. Inserting import at start of file.'
     export const noWorkspaceFolders = 'No workspace folders found. Cannot read fallback configuration.'
     export const parsedTagLine = (tag: any) => `Parsed tag: ${JSON.stringify(tag)}`
     export const parsingTagLine = (line: string) => `Parsing tag line: ${line}`
     export const pickedSuggestion = (suggestion: any) => `Picked: ${JSON.stringify(suggestion)}`
     export const providingCodeActions = 'Providing code actions...'
-    export const ranCommand = (cmd: string) => `Ran “${cmd}”.`
+    export const ranCommand = (cmd: string) => `Ran "${cmd}".`
     export const readingFallbackConfig = (path: string) => `Reading fallback configuration from path: ${path}`
     export const readingWorkspaceSettings = 'Reading configuration from workspace settings'
     export const registeredCompletionsProvider = 'Registered completions provider.'
@@ -402,7 +403,7 @@ export namespace alloglot {
     export const renderedImportLine = (line?: string) => `Rendered import line: ${line}`
     export const renderedModuleName = (name?: string) => `Rendered module name: ${name}`
     export const renderingImportLine = (tag: any) => `Rendering import line for tag: ${JSON.stringify(tag)}`
-    export const runningCommand = (cmd: string, cwd?: string) => `Running “${cmd}” in “${cwd}”...`
+    export const runningCommand = (cmd: string, cwd?: string) => `Running "${cmd}" in "${cwd}"...`
     export const runningSuggestImports = 'Running suggest imports...'
     export const splittingOutputChannel = (name: string) => `Creating new output channel: ${name}`
     export const startingAlloglot = 'Starting Alloglot...'
