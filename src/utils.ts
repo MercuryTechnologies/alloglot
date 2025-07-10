@@ -71,18 +71,56 @@ export namespace AsyncProcess {
     const cwd = basedir?.fsPath
 
     let proc: child_process.ChildProcess | undefined = undefined
+    let killTimeout: NodeJS.Timeout | undefined = undefined
 
     const disposable = vscode.Disposable.from({
       dispose: () => {
         if (proc) {
           try {
             output?.appendLine(alloglot.ui.killingCommand(command))
+            
+            // Clear any existing timeout
+            if (killTimeout) {
+              clearTimeout(killTimeout)
+            }
+            
+            // Try SIGINT first (graceful shutdown)
             proc.kill('SIGINT')
-            while (!proc.killed) { }
-            proc = undefined
-            output?.appendLine(alloglot.ui.commandKilled(command))
+            
+            // Use a timeout for SIGKILL if SIGINT doesn't work
+            killTimeout = setTimeout(() => {
+              if (proc && !proc.killed) {
+                output?.appendLine(alloglot.ui.killingCommand(command))
+                try {
+                  proc.kill('SIGKILL')
+                } catch (err) {
+                  output?.appendLine(alloglot.ui.errorKillingCommand(command, err))
+                }
+              }
+            }, 3000) // 3 second timeout for graceful shutdown
+            
+            // Set up a one-time listener for process exit
+            const onExit = () => {
+              if (killTimeout) {
+                clearTimeout(killTimeout)
+                killTimeout = undefined
+              }
+              proc = undefined
+              output?.appendLine(alloglot.ui.commandKilled(command))
+            }
+            
+            if (proc.killed) {
+              onExit()
+            } else {
+              proc.once('exit', onExit)
+            }
           } catch (err) {
             output?.appendLine(alloglot.ui.errorKillingCommand(command, err))
+            // Clean up even if there's an error
+            if (killTimeout) {
+              clearTimeout(killTimeout)
+            }
+            proc = undefined
           }
         }
       }
