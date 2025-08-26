@@ -21,7 +21,7 @@ jobs:
           echo "See: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#running-your-workflow-when-a-pull-request-merges"
 
       - name: Comment on PR with link to this action
-        uses: peter-evans/create-or-update-comment@v2
+        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d # v2.1.1
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
       - name: Get NPM metadata
         id: npm_metadata
@@ -50,7 +50,7 @@ jobs:
         run: npm run build
 
       - name: Tag commit
-        uses: mathieudutour/github-tag-action@v6.1
+        uses: mathieudutour/github-tag-action@fcfbdceb3093f6d85a3b194740f8c6cec632f4e2 # v6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           commit_sha: ${{ github.event.pull_request.merge_commit_sha }}
@@ -58,7 +58,7 @@ jobs:
 
       - name: Create release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -80,7 +80,7 @@ jobs:
             ${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix
 
       - name: Comment on PR with link to the release
-        uses: peter-evans/create-or-update-comment@v2
+        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d # v2.1.1
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
@@ -89,7 +89,7 @@ jobs:
             [release]: ${{ steps.create_release.outputs.url }}
 
       - name: Publish to Visual Studio Marketplace
-        uses: HaaLeo/publish-vscode-extension@v1
+        uses: HaaLeo/publish-vscode-extension@f4ece70f329f66686bd71c54b1671353fe320e49 # v1.7.0
         with:
           pat: ${{ secrets.MERCURY_MARKETPLACE_TOKEN }}
           registryUrl: https://marketplace.visualstudio.com
