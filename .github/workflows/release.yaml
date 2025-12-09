@@ -94,3 +94,26 @@ jobs:
           pat: ${{ secrets.MERCURY_MARKETPLACE_TOKEN }}
           registryUrl: https://marketplace.visualstudio.com
           extensionFile: ${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-package
+          path: ${{ steps.npm_metadata.outputs.name }}-${{ steps.npm_metadata.outputs.version }}.vsix
+
+  publish-ovsx:
+    name: Publish to Open VSX
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix-package
+          path: dist
+      - name: Publish package
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          FILE=$(node -p "const pkg=require('./package.json'); pkg.name + '-' + pkg.version + '.vsix'")
+          npx ovsx publish --packagePath dist/$FILE --pat "$OVSX_PAT"

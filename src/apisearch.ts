@@ -206,7 +206,7 @@ Portions of this software are derived from [vscode-goto-documentation](https://g
 
 import * as vscode from 'vscode'
 
-import { TConfig, alloglot } from './config'
+import { LanguageConfig, TConfig, alloglot } from './config'
 
 export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vscode.Disposable {
   const { languages } = config
@@ -214,14 +214,20 @@ export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vs
 
   output.appendLine(alloglot.ui.creatingApiSearch(languages.map(lang => lang.languageId)))
 
-  const langs: Map<string, string> = new Map()
+  type ApiSearchTarget = { name: string, url: string }
+  type ApiSearchLanguage = { targets: Array<ApiSearchTarget> }
+
+  const langs: Map<string, ApiSearchLanguage> = new Map()
   languages.forEach(lang => {
-    lang.languageId && lang.apiSearchUrl && langs.set(lang.languageId, lang.apiSearchUrl)
+    if (!lang.languageId) return
+    const targets = collectTargets(lang)
+    if (!targets.length) return
+    langs.set(lang.languageId, { targets })
   })
 
   return vscode.commands.registerTextEditorCommand(
     alloglot.commands.apiSearch,
-    editor => {
+    async editor => {
       const { document, selection } = editor
       const wordRange = document.getWordRangeAtPosition(selection.start)
       const query =
@@ -230,13 +236,82 @@ export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vs
           : wordRange
             ? document.getText(wordRange)
             : ''
-      const pattern = langs.get(document.languageId)
-      const url =
-        pattern
-          ? pattern.replace('${query}', encodeURI(query))
-          : `https://www.google.com/search?q=${encodeURI(query)}`
+      const langConfig = langs.get(document.languageId)
+      const url = langConfig
+        ? await resolveUrl(langConfig, document.fileName, query)
+        : `https://www.google.com/search?q=${encodeURI(query)}`
 
-      vscode.env.openExternal(vscode.Uri.parse(url))
+      if (url) vscode.env.openExternal(vscode.Uri.parse(url))
     }
   )
+
+  function collectTargets(lang: LanguageConfig): Array<ApiSearchTarget> {
+    const targets: Array<ApiSearchTarget> = []
+    lang.apiSearchTargets?.forEach((target, idx) => {
+      targets.push({ name: target.name || `Search ${idx + 1}`, url: target.url })
+    })
+    if (lang.apiSearchUrl) {
+      const defaultName = lang.apiSearchTargets && lang.apiSearchTargets.length > 0 ? 'Default' : lang.languageId
+      targets.push({ name: defaultName || 'Search', url: lang.apiSearchUrl })
+    }
+    return targets
+  }
+
+  async function resolveUrl(lang: ApiSearchLanguage, fileName: string, query: string): Promise<string | undefined> {
+    const target = await pickTarget(lang.targets)
+    if (!target) return undefined
+    const moduleName = deriveHaskellModuleName(fileName)
+    return applyTemplate(target.url, query, moduleName)
+  }
+
+  async function pickTarget(targets: Array<ApiSearchTarget>): Promise<ApiSearchTarget | undefined> {
+    if (targets.length === 1) return targets[0]
+    const pick = await vscode.window.showQuickPick(
+      targets.map(target => ({ label: target.name, target })),
+      { placeHolder: 'Select API search target' }
+    )
+    return pick?.target
+  }
+}
+
+function applyTemplate(pattern: string, query: string, moduleName?: string): string {
+  const encodedQuery = encodeURI(query)
+  const encodedModule = moduleName ? encodeURI(moduleName) : ''
+  return pattern
+    .split('${query}').join(encodedQuery)
+    .split('${haskell-file-module}').join(encodedModule)
+}
+
+function deriveHaskellModuleName(file: string): string | undefined {
+  const normalized = file.replace(/\\/g, '/')
+  const withoutExt = dropHaskellExtension(normalized)
+  const relative = stripToHaskellRoot(withoutExt)
+  const segments = relative.split('/').filter(Boolean)
+  if (!segments.length) return undefined
+  const moduleName = segments.map(capitalizeSegment).join('.')
+  return moduleName || undefined
+}
+
+function dropHaskellExtension(path: string): string {
+  const exts = ['.hs', '.lhs']
+  for (const ext of exts) {
+    if (path.toLowerCase().endsWith(ext)) return path.slice(0, -ext.length)
+  }
+  return path
+}
+
+function stripToHaskellRoot(path: string): string {
+  const markers = ['src', 'app', 'lib', 'test', 'tests']
+  for (const marker of markers) {
+    const token = `/${marker}/`
+    const idx = path.indexOf(token)
+    if (idx >= 0) return path.substring(idx + token.length)
+  }
+  const lastSlash = path.lastIndexOf('/')
+  return lastSlash >= 0 ? path.substring(lastSlash + 1) : path
+}
+
+function capitalizeSegment(segment: string): string {
+  if (!segment) return segment
+  return segment.charAt(0).toUpperCase() + segment.slice(1)
 }

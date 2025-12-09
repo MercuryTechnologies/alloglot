@@ -4,7 +4,10 @@ All notable changes to the "alloglot" extension will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [4.0.4]
+- Add cleanup on extension restart fixing hanging process issues
+- Remove "Suggest Imports" from the editor context menu
+- API search now supports multiple per-language targets and `${haskell-file-module}` expansion
 
 ## [4.0.3]
 
