@@ -81,6 +81,13 @@ export type LanguageConfig = {
   apiSearchUrl?: string
 
   /**
+   * Named URL templates for documentation/API search.
+   * `${query}` will be replaced with the symbol under cursor.
+   * `${haskell-file-module}` will be replaced with the module derived from the current file path.
+   */
+  apiSearchTargets?: Array<ApiSearchTargetConfig>
+
+  /**
    * A list of tags files to use to find definitions, suggest completions, or suggest imports.
    */
   tags?: Array<TagsConfig>
@@ -125,16 +132,9 @@ export type TagsConfig = {
 }
 
 /**
- * Configuration to use a tags file to suggests imports.
+ * Instructions on how to render a module name from a file path.
  */
-export type ImportsProviderConfig = {
-  /**
-   * Pattern to create an import line.
-   * `${module}` will be replaced with the module to import.
-   * `${symbol}` will be replaced with the symbol to expose.
-   */
-  importLinePattern: string,
-
+export type ModuleNameRendererConfig = {
   /**
    * Regex pattern matching the part of a file path needed to construct a module name.
    * (We will use the entire _match,_ not the captures.)
@@ -146,6 +146,27 @@ export type ImportsProviderConfig = {
    * A list of transformations to apply to the string matched by `matchFromFilepath`.
    */
   renderModuleName: Array<StringTransformation>
+}
+
+export type ImportsProviderConfig = ModuleNameRendererConfig & {
+  /**
+   * Pattern to create an import line.
+   * `${module}` will be replaced with the module to import.
+   * `${symbol}` will be replaced with the symbol to expose.
+   */
+  importLinePattern: string,
+}
+
+export type ApiSearchTargetConfig = {
+  /**
+   * Display name shown when picking a search target.
+   */
+  name?: string
+
+  /**
+   * URL template used for the search.
+   */
+  url: string
 }
 
 export type StringTransformation
@@ -274,6 +295,7 @@ export namespace Config {
         lang.formatCommand = lang.formatCommand?.trim()
         lang.onSaveCommand = lang.onSaveCommand?.trim()
         lang.apiSearchUrl = lang.apiSearchUrl?.trim()
+        lang.apiSearchTargets = sanitizeApiSearchTargets(lang.apiSearchTargets)
 
         lang.annotations = lang.annotations?.filter(ann => {
           ann.file = ann.file.trim()
@@ -285,8 +307,7 @@ export namespace Config {
           tag.file = tag.file.trim()
           tag.initTagsCommand = tag.initTagsCommand?.trim()
           tag.refreshTagsCommand = tag.refreshTagsCommand?.trim()
-          if (!tag?.importsProvider?.importLinePattern.trim()) tag.importsProvider = undefined
-          if (!tag?.importsProvider?.matchFromFilepath.trim()) tag.importsProvider = undefined
+          tag.importsProvider = sanitizeImportsProvider(tag.importsProvider)
           return tag.file
         })
         if (lang.tags) lang.tags = arrayUniqueBy(tag => tag.file, lang.tags)
@@ -319,9 +340,38 @@ export namespace Config {
       serverArgs: mask.serverArgs || base.serverArgs,
       formatCommand: mask.formatCommand || base.formatCommand,
       apiSearchUrl: mask.apiSearchUrl || base.apiSearchUrl,
+      apiSearchTargets: mask.apiSearchTargets || base.apiSearchTargets,
       tags: arrayMerge(mask.tags || [], base.tags || [], tag => tag.file, tagMerge),
       annotations: arrayMerge(mask.annotations || [], base.annotations || [], ann => ann.file, (mask, base) => mask)
     }
+  }
+
+  function sanitizeImportsProvider(config?: ImportsProviderConfig): ImportsProviderConfig | undefined {
+    if (!config) return undefined
+    config.importLinePattern = config.importLinePattern?.trim()
+    if (!config.importLinePattern) return undefined
+    const sanitizedRenderer = sanitizeModuleRendererConfig(config)
+    if (!sanitizedRenderer) return undefined
+    return config
+  }
+
+  function sanitizeModuleRendererConfig(config?: ModuleNameRendererConfig): ModuleNameRendererConfig | undefined {
+    if (!config) return undefined
+    config.matchFromFilepath = config.matchFromFilepath?.trim()
+    if (!config.matchFromFilepath) return undefined
+    return config
+  }
+
+  function sanitizeApiSearchTargets(targets?: Array<ApiSearchTargetConfig>): Array<ApiSearchTargetConfig> | undefined {
+    if (!targets) return undefined
+    const sanitized = targets
+      .map(target => {
+        target.name = target.name?.trim()
+        target.url = target.url?.trim()
+        return target
+      })
+      .filter(target => !!target.url)
+    return sanitized.length ? sanitized : undefined
   }
 
   function tagMerge(mask: TagsConfig, base: TagsConfig): TagsConfig {

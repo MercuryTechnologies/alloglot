@@ -33,7 +33,16 @@ Most of the properties are optional, so you can make use of only the features th
       "serverCommand": "static-ls",
       "formatCommand": "fourmolu --mode stdout --stdin-input-file ${file}",
       "onSaveCommand": ".bin/hlint --json --no-exit-code ${file} > hlint-out.json",
-      "apiSearchUrl": "https://hoogle.haskell.org/?hoogle=${query}",
+      "apiSearchTargets": [
+        {
+          "name": "Hoogle",
+          "url": "https://hoogle.haskell.org/?hoogle=${query}"
+        },
+        {
+          "name": "Temporal",
+          "url": "https://cloud.temporal.io/namespaces/production.uoqel/workflows?query=%60WorkflowType%60+STARTS_WITH+%22${haskell-file-module}%22"
+        }
+      ],
       "tags": [
         {
           "file": ".tags",
@@ -138,6 +147,8 @@ Most of the properties are optional, so you can make use of only the features th
 }
 ```
 
+When `${haskell-file-module}` appears in an API search target, Alloglot derives a module name heuristically: it normalizes the current file path, removes `.hs`/`.lhs`, strips a leading `src/`, `app/`, `lib/`, `test/`, or `tests/` segment when present, replaces path separators with dots, and capitalizes each component (for example, `src/foo/bar.hs` becomes `Foo.Bar`).
+
 ### Zero-conf
 
 Alloglot supports "zero-configuration" in the following sense.
@@ -233,6 +244,13 @@ export type LanguageConfig = {
   apiSearchUrl?: string
 
   /**
+   * Named URL templates for documentation/API search.
+   * `${query}` will be replaced with the symbol under cursor.
+   * `${haskell-file-module}` expands to the current file rendered as a Haskell module name.
+   */
+  apiSearchTargets?: Array<ApiSearchTargetConfig>
+
+  /**
    * A list of tags files to use to find definitions, suggest completions, or suggest imports.
    */
   tags?: Array<TagsConfig>
@@ -279,14 +297,7 @@ export type TagsConfig = {
 /**
  * Configuration to use a tags file to suggests imports.
  */
-export type ImportsProviderConfig = {
-  /**
-   * Pattern to create an import line.
-   * `${module}` will be replaced with the module to import.
-   * `${symbol}` will be replaced with the symbol to expose.
-   */
-  importLinePattern: string,
-
+export type ModuleNameRendererConfig = {
   /**
    * Regex pattern matching the part of a file path needed to construct a module name.
    * (We will use the entire _match,_ not the captures.)
@@ -298,6 +309,29 @@ export type ImportsProviderConfig = {
    * A list of transformations to apply to the string matched by `matchFromFilepath`.
    */
   renderModuleName: Array<StringTransformation>
+}
+
+export type ImportsProviderConfig = ModuleNameRendererConfig & {
+  /**
+   * Pattern to create an import line.
+   * `${module}` will be replaced with the module to import.
+   * `${symbol}` will be replaced with the symbol to expose.
+   */
+  importLinePattern: string,
+}
+
+export type ApiSearchTargetConfig = {
+  /**
+   * Display name shown when selecting a search target.
+   */
+  name?: string
+
+  /**
+   * URL template used for the search.
+   * `${query}` expands to the selected text/symbol.
+   * `${haskell-file-module}` expands to the current file rendered as a module name (heuristically derived from the path).
+   */
+  url: string
 }
 
 export type StringTransformation

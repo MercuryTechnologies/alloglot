@@ -2,7 +2,7 @@
   "name": "alloglot-mercury",
   "displayName": "Alloglot Mercury",
   "description": "Configurable Language agnostic IDE for VS Code",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "publisher": "mercurytechnologiesinc",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
@@ -35,10 +35,6 @@
         {
           "command": "alloglot.command.apisearch",
           "group": "navigation@2"
-        },
-        {
-          "command": "alloglot.command.suggestimports",
-          "group": "navigation@3"
         }
       ]
     },
@@ -94,6 +90,23 @@
               },
               "apiSearchUrl": {
                 "type": "string"
+              },
+              "apiSearchTargets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "url"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
               },
               "tags": {
                 "type": "array",
