@@ -206,7 +206,7 @@ Portions of this software are derived from [vscode-goto-documentation](https://g
 
 import * as vscode from 'vscode'
 
-import { LanguageConfig, TConfig, alloglot } from './config'
+import { ApiSearchQueryTransformConfig, LanguageConfig, StringTransformation, TConfig, alloglot } from './config'
 
 export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vscode.Disposable {
   const { languages } = config
@@ -214,7 +214,11 @@ export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vs
 
   output.appendLine(alloglot.ui.creatingApiSearch(languages.map(lang => lang.languageId)))
 
-  type ApiSearchTarget = { name: string, url: string }
+  type ApiSearchTarget = {
+    name: string
+    url: string
+    queryTransformations?: Array<ApiSearchQueryTransformConfig>
+  }
   type ApiSearchLanguage = { targets: Array<ApiSearchTarget> }
 
   const langs: Map<string, ApiSearchLanguage> = new Map()
@@ -248,7 +252,11 @@ export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vs
   function collectTargets(lang: LanguageConfig): Array<ApiSearchTarget> {
     const targets: Array<ApiSearchTarget> = []
     lang.apiSearchTargets?.forEach((target, idx) => {
-      targets.push({ name: target.name || `Search ${idx + 1}`, url: target.url })
+      targets.push({
+        name: target.name || `Search ${idx + 1}`,
+        url: target.url,
+        queryTransformations: target.queryTransformations
+      })
     })
     if (lang.apiSearchUrl) {
       const defaultName = lang.apiSearchTargets && lang.apiSearchTargets.length > 0 ? 'Default' : lang.languageId
@@ -261,7 +269,8 @@ export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vs
     const target = await pickTarget(lang.targets)
     if (!target) return undefined
     const moduleName = deriveHaskellModuleName(fileName)
-    return applyTemplate(target.url, query, moduleName)
+    const renderedQuery = renderQueryForTarget(query, target.queryTransformations)
+    return applyTemplate(target.url, renderedQuery, moduleName)
   }
 
   async function pickTarget(targets: Array<ApiSearchTarget>): Promise<ApiSearchTarget | undefined> {
@@ -271,6 +280,48 @@ export function makeApiSearch(output: vscode.OutputChannel, config: TConfig): vs
       { placeHolder: 'Select API search target' }
     )
     return pick?.target
+  }
+}
+
+function renderQueryForTarget(query: string, transforms?: Array<ApiSearchQueryTransformConfig>): string {
+  if (!transforms || transforms.length === 0) return query
+  return transforms.reduce((current, transform) => {
+    if (!transform.matchQuery) return current
+    try {
+      const matcher = new RegExp(transform.matchQuery)
+      if (!matcher.test(current)) return current
+      return applyStringTransformations(transform.renderQuery, current)
+    } catch (err) {
+      console.error('Alloglot: Failed to apply API search query transformation', err)
+      return current
+    }
+  }, query)
+}
+
+function applyStringTransformations(cmds: Array<StringTransformation>, input: string): string {
+  let buffer = [input]
+  cmds.forEach(cmd => {
+    buffer = applyStringTransformation(cmd, buffer)
+  })
+  return buffer.join('')
+}
+
+function applyStringTransformation(cmd: StringTransformation, values: Array<string>): Array<string> {
+  switch (cmd.tag) {
+    case 'replace':
+      return values.map(value => value.replace(new RegExp(cmd.from, 'g'), cmd.to))
+    case 'split':
+      return values.flatMap(value => value.split(cmd.on))
+    case 'join':
+      return [values.join(cmd.with)]
+    case 'toUpper':
+      return values.map(value => value.toUpperCase())
+    case 'toLower':
+      return values.map(value => value.toLowerCase())
+    case 'capitalize':
+      return values.map(value => value.charAt(0).toUpperCase() + value.slice(1))
+    default:
+      return values
   }
 }
 

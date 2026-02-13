@@ -40,6 +40,18 @@ Most of the properties are optional, so you can make use of only the features th
         },
         {
           "name": "Temporal",
+          "queryTransformations": [
+            {
+              "matchQuery": "^([A-Z][A-Za-z0-9_']*)(\\.[A-Z][A-Za-z0-9_']*)*$",
+              "renderQuery": [
+                {
+                  "tag": "replace",
+                  "from": "\\.",
+                  "to": "/"
+                }
+              ]
+            }
+          ],
           "url": "https://cloud.temporal.io/namespaces/production.uoqel/workflows?query=%60WorkflowType%60+STARTS_WITH+%22${haskell-file-module}%22"
         }
       ],
@@ -148,6 +160,8 @@ Most of the properties are optional, so you can make use of only the features th
 ```
 
 When `${haskell-file-module}` appears in an API search target, Alloglot derives a module name heuristically: it normalizes the current file path, removes `.hs`/`.lhs`, strips a leading `src/`, `app/`, `lib/`, `test/`, or `tests/` segment when present, replaces path separators with dots, and capitalizes each component (for example, `src/foo/bar.hs` becomes `Foo.Bar`).
+
+API search targets can optionally declare `queryTransformations`. Each transformation provides a `matchQuery` regex and a list of `StringTransformation` steps. When the current query matches the regex, the steps are applied before `${query}` is interpolated into the target URL. This makes it easy to, for example, translate Haskell module names (`Data.Set`) into relative file paths (`Data/Set`) without affecting other search targets.
 
 ### Zero-conf
 
@@ -332,6 +346,23 @@ export type ApiSearchTargetConfig = {
    * `${haskell-file-module}` expands to the current file rendered as a module name (heuristically derived from the path).
    */
   url: string
+
+  /**
+   * Optional transformations applied to `${query}` before interpolation.
+   */
+  queryTransformations?: Array<ApiSearchQueryTransformConfig>
+}
+
+export type ApiSearchQueryTransformConfig = {
+  /**
+   * Regex pattern that must match the search query before applying the transformations.
+   */
+  matchQuery: string
+
+  /**
+   * Transformations to apply to the query when `matchQuery` matches.
+   */
+  renderQuery: Array<StringTransformation>
 }
 
 export type StringTransformation

@@ -104,6 +104,47 @@
                     },
                     "url": {
                       "type": "string"
+                    },
+                    "queryTransformations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "matchQuery",
+                          "renderQuery"
+                        ],
+                        "properties": {
+                          "matchQuery": {
+                            "type": "string"
+                          },
+                          "renderQuery": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "tag"
+                              ],
+                              "properties": {
+                                "tag": {
+                                  "type": "string"
+                                },
+                                "from": {
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "type": "string"
+                                },
+                                "on": {
+                                  "type": "string"
+                                },
+                                "with": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }

@@ -157,6 +157,18 @@ export type ImportsProviderConfig = ModuleNameRendererConfig & {
   importLinePattern: string,
 }
 
+export type ApiSearchQueryTransformConfig = {
+  /**
+   * Regex pattern that must match the search query before applying the transformations.
+   */
+  matchQuery: string
+
+  /**
+   * Transformations to apply to the query when `matchQuery` matches.
+   */
+  renderQuery: Array<StringTransformation>
+}
+
 export type ApiSearchTargetConfig = {
   /**
    * Display name shown when picking a search target.
@@ -167,6 +179,11 @@ export type ApiSearchTargetConfig = {
    * URL template used for the search.
    */
   url: string
+
+  /**
+   * Optional transformations applied to `${query}` before interpolation.
+   */
+  queryTransformations?: Array<ApiSearchQueryTransformConfig>
 }
 
 export type StringTransformation
@@ -368,9 +385,21 @@ export namespace Config {
       .map(target => {
         target.name = target.name?.trim()
         target.url = target.url?.trim()
+        target.queryTransformations = sanitizeQueryTransformations(target.queryTransformations)
         return target
       })
       .filter(target => !!target.url)
+    return sanitized.length ? sanitized : undefined
+  }
+
+  function sanitizeQueryTransformations(transforms?: Array<ApiSearchQueryTransformConfig>): Array<ApiSearchQueryTransformConfig> | undefined {
+    if (!transforms) return undefined
+    const sanitized = transforms
+      .map(transform => {
+        transform.matchQuery = transform.matchQuery?.trim()
+        return transform
+      })
+      .filter(transform => !!transform.matchQuery && !!transform.renderQuery && transform.renderQuery.length > 0)
     return sanitized.length ? sanitized : undefined
   }
 
