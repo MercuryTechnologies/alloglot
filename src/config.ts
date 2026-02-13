@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs'
+import { dirname, isAbsolute, join } from 'path'
 import * as vscode from 'vscode'
 
 /**
@@ -227,9 +228,17 @@ export namespace Config {
     try {
       const workspaceFolders = vscode.workspace.workspaceFolders?.map(folder => folder.uri)
       if (workspaceFolders && workspaceFolders.length > 0) {
-        const fullPath = vscode.Uri.joinPath(workspaceFolders[0], alloglot.config.fallbackPath)
-        output.appendLine(alloglot.ui.readingFallbackConfig(fullPath.path))
-        return JSON.parse(readFileSync(fullPath.path, 'utf-8'))
+        const configPath = findConfigUpwards(workspaceFolders[0], output)
+        if (configPath) {
+          output.appendLine(alloglot.ui.readingFallbackConfig(configPath.path))
+          const config = JSON.parse(readFileSync(configPath.path, 'utf-8'))
+          // Resolve all relative paths in the config to absolute paths based on config file location
+          const configDir = dirname(configPath.path)
+          return resolveConfigPaths(config, configDir, output)
+        } else {
+          output.appendLine(alloglot.ui.noConfigFound)
+          return undefined
+        }
       } else {
         output.appendLine(alloglot.ui.noWorkspaceFolders)
         return undefined
@@ -238,6 +247,72 @@ export namespace Config {
       output.appendLine(alloglot.ui.couldNotReadFallback(err))
       return undefined
     }
+  }
+
+  function findConfigUpwards(startDir: vscode.Uri, output: vscode.OutputChannel): vscode.Uri | undefined {
+    let currentDir = startDir
+    const root = vscode.Uri.file('/')
+
+    while (true) {
+      const configPath = vscode.Uri.joinPath(currentDir, alloglot.config.fallbackPath)
+      output.appendLine(alloglot.ui.checkingConfigPath(configPath.path))
+
+      try {
+        // Check if file exists by attempting to read it
+        readFileSync(configPath.path, 'utf-8')
+        output.appendLine(alloglot.ui.foundConfig(configPath.path))
+        return configPath
+      } catch {
+        // File doesn't exist, continue searching
+      }
+
+      // Check if we've reached the filesystem root
+      if (currentDir.path === root.path || currentDir.path === '/') {
+        output.appendLine(alloglot.ui.reachedFilesystemRoot)
+        break
+      }
+
+      // Move up one directory
+      const parentDir = vscode.Uri.joinPath(currentDir, '..')
+
+      // Additional safety check to prevent infinite loop
+      if (parentDir.path === currentDir.path) {
+        output.appendLine(alloglot.ui.cannotTraverseUp)
+        break
+      }
+
+      currentDir = parentDir
+    }
+
+    return undefined
+  }
+
+  function resolveConfigPaths(config: TConfig, configDir: string, output: vscode.OutputChannel): TConfig {
+    output.appendLine(alloglot.ui.resolvingPathsFrom(configDir))
+
+    if (config.languages) {
+      config.languages = config.languages.map(lang => {
+        // Resolve tags file paths
+        if (lang.tags) {
+          lang.tags = lang.tags.map(tag => ({
+            ...tag,
+            file: isAbsolute(tag.file) ? tag.file : join(configDir, tag.file)
+          }))
+        }
+
+        // Resolve annotations file paths
+        if (lang.annotations) {
+          lang.annotations = lang.annotations.map(ann => ({
+            ...ann,
+            file: isAbsolute(ann.file) ? ann.file : join(configDir, ann.file)
+          }))
+        }
+
+        return lang
+      })
+    }
+
+    return config
   }
 
   function readWorkspace(output: vscode.OutputChannel): TConfig | undefined {
@@ -385,6 +460,12 @@ export namespace alloglot {
     export const mergingConfigs = 'Merging workspace configuration with ".vscode/alloglot.json"...'
     export const noBlankLineFound = 'No blank line found. Inserting import at start of file.'
     export const noWorkspaceFolders = 'No workspace folders found. Cannot read fallback configuration.'
+    export const noConfigFound = 'No configuration file found while traversing upwards to filesystem root.'
+    export const checkingConfigPath = (path: string) => `Checking for configuration at: ${path}`
+    export const foundConfig = (path: string) => `Found configuration file at: ${path}`
+    export const reachedFilesystemRoot = 'Reached filesystem root without finding configuration.'
+    export const cannotTraverseUp = 'Cannot traverse up further (reached root or encountered path issue).'
+    export const resolvingPathsFrom = (dir: string) => `Resolving relative paths from config directory: ${dir}`
     export const parsedTagLine = (tag: any) => `Parsed tag: ${JSON.stringify(tag)}`
     export const parsingTagLine = (line: string) => `Parsing tag line: ${line}`
     export const pickedSuggestion = (suggestion: any) => `Picked: ${JSON.stringify(suggestion)}`

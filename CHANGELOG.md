@@ -4,13 +4,10 @@ All notable changes to the "alloglot" extension will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 This project adhere's to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
-
-## [4.0.3]
-
-## [4.0.2]
-
-## [4.0.1]
+=======
+## [4.0.5]
+- Configuration files (`.vscode/alloglot.json`) are now searched upwards from workspace root to filesystem root
+- Relative paths in configuration files are now correctly resolved relative to the config file's location
 
 ## [4.0.0]
 
